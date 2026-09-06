@@ -11,7 +11,7 @@ This package reproduces everything that is currently public and executable for t
 
 ## Important scope correction
 
-ALARB is about reasoning over anonymized Saudi **commercial court cases**. It is not a criminal-record (`سوابق جنائية`) dataset and cannot determine whether a real person has a record. See `AGENTIC_PROJECT_SCOPE.md` for a research direction that matches the parent paper.
+ALARB is about reasoning over anonymized Saudi **commercial court cases**. It is not a criminal-record dataset and cannot determine whether a real person has a record. See `AGENTIC_PROJECT_SCOPE.md` for a research direction that matches the parent paper.
 
 ## Run it
 
