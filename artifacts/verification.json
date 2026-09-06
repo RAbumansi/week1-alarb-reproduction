@@ -1,11 +1,9 @@
 {
   "status": "PASS",
   "source": {
-    "kind": "local_parquet",
-    "files": {
-      "train": "../../work/ALARB-dataset/data/train-00000-of-00001.parquet",
-      "test": "../../work/ALARB-dataset/data/test-00000-of-00001.parquet"
-    }
+    "kind": "huggingface",
+    "dataset_id": "THIQAH-RD/ALARB",
+    "revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2"
   },
   "rows": {
     "train": 12012,
@@ -117,9 +115,5 @@
       "words_avg": 13
     }
   },
-  "paper_public_dataset_row_difference": -3,
-  "local_file_sha256": {
-    "test-00000-of-00001.parquet": "0bc425145417e8966345af3324bad9627c8bd0f469559684c1d9c8dda81dbae5",
-    "train-00000-of-00001.parquet": "16a642aeff40e9c8d050ca99a81f7a1802cdbee64234778d6c5790d20750ae32"
-  }
+  "paper_public_dataset_row_difference": -3
 }
