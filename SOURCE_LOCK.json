@@ -1,0 +1,32 @@
+{
+  "parent_paper": {
+    "title": "ALARB: An Arabic Legal Argument Reasoning Benchmark",
+    "arxiv_id": "2510.00694v1",
+    "url": "https://arxiv.org/abs/2510.00694",
+    "submitted": "2025-10-01",
+    "license": "CC BY 4.0"
+  },
+  "official_dataset": {
+    "id": "THIQAH-RD/ALARB",
+    "url": "https://huggingface.co/datasets/THIQAH-RD/ALARB",
+    "git_commit": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+    "license": "Apache-2.0",
+    "files": {
+      "train-00000-of-00001.parquet": {
+        "bytes": 19133223,
+        "sha256": "16a642aeff40e9c8d050ca99a81f7a1802cdbee64234778d6c5790d20750ae32"
+      },
+      "test-00000-of-00001.parquet": {
+        "bytes": 2145231,
+        "sha256": "0bc425145417e8966345af3324bad9627c8bd0f469559684c1d9c8dda81dbae5"
+      }
+    }
+  },
+  "related_predecessor_code_not_alarb_code": {
+    "repository": "Thiqah/ArabLegalEval",
+    "url": "https://github.com/Thiqah/ArabLegalEval",
+    "git_commit": "7e9530039324a45cf7b585b618663e3359ed589c",
+    "note": "Published by substantially the same author group, but it implements the earlier ArabLegalEval paper, not ALARB. No repository license was present at the inspected commit."
+  }
+}
+
