@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "source": {
+    "dataset_id": "THIQAH-RD/ALARB",
+    "revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+    "official_train_rows": 12012,
+    "official_test_rows": 1329
+  },
+  "strategy": "Preserve the official test split as the sealed validation holdout; shuffle and divide only the official train split.",
+  "seed": 42,
+  "requested_ratios": {
+    "train": 0.7,
+    "test": 0.2,
+    "validation": 0.1
+  },
+  "rows": {
+    "train": 9339,
+    "test": 2673,
+    "validation": 1329
+  },
+  "actual_ratios": {
+    "train": 0.700022,
+    "test": 0.20036,
+    "validation": 0.099618
+  },
+  "paths": {
+    "train": "data/development/train.parquet",
+    "test": "data/development/test.parquet",
+    "validation": "data/validation_holdout/validation.parquet"
+  },
+  "validation_policy": "Do not load validation.parquet during training, debugging, model selection, prompt tuning, or test evaluation. Open it once only for the final locked evaluation."
+}
