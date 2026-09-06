@@ -1,0 +1,125 @@
+{
+  "status": "PASS",
+  "source": {
+    "kind": "local_parquet",
+    "files": {
+      "train": "../../work/ALARB-dataset/data/train-00000-of-00001.parquet",
+      "test": "../../work/ALARB-dataset/data/test-00000-of-00001.parquet"
+    }
+  },
+  "rows": {
+    "train": 12012,
+    "test": 1329,
+    "total": 13341
+  },
+  "features": {
+    "case_facts": "List(Value('string'))",
+    "court_reasoning": "List(Value('string'))",
+    "applicable_laws": "List(Value('string'))",
+    "verdict": "Value('string')"
+  },
+  "observed_statistics": {
+    "case_facts": {
+      "steps_min": 3,
+      "steps_max": 11,
+      "steps_avg": 8.5892,
+      "words_min": 31,
+      "words_max": 398,
+      "words_avg": 181.1812,
+      "empty_rows": 0
+    },
+    "court_reasoning": {
+      "steps_min": 1,
+      "steps_max": 11,
+      "steps_avg": 6.4689,
+      "words_min": 18,
+      "words_max": 296,
+      "words_avg": 127.9168,
+      "empty_rows": 0
+    },
+    "applicable_laws": {
+      "steps_min": 0,
+      "steps_max": 16,
+      "steps_avg": 2.632,
+      "words_min": 0,
+      "words_max": 1512,
+      "words_avg": 198.6751,
+      "empty_rows": 988
+    },
+    "verdict": {
+      "words_min": 5,
+      "words_max": 26,
+      "words_avg": 13.2311,
+      "empty_rows": 0
+    }
+  },
+  "integrity": {
+    "exact_duplicates_within_split": {
+      "train": 0,
+      "test": 0
+    },
+    "case_facts_overlap_between_train_and_test": 0
+  },
+  "law_prefix_audit": {
+    "total_references": 35113,
+    "raw_document_prefix_count": 18,
+    "raw_document_article_key_count": 878,
+    "references_by_raw_document_prefix": {
+      "نظام المحاكم التجارية": 13484,
+      "نظام الإثبات": 6910,
+      "اللائحة التنفيذية لنظام المحاكم التجارية": 6641,
+      "نظام المرافعات الشرعية": 4914,
+      "نظام الشركات": 1363,
+      "نظام المحكمة التجارية": 439,
+      "نظام المحاماة": 300,
+      "لائحة نظام المحاكم التجارية": 259,
+      "اللائحة التنفيذية لنظام المرافعات الشرعية": 243,
+      "نظام الاثبات": 209,
+      "نظام الإفلاس": 135,
+      "نظام التنفيذ": 105,
+      "نظام المرافعات": 75,
+      "اللائحة التنفيذية لنظام المرافعات": 26,
+      "اللائحة التنفيذية لنظام التنفيذ": 6,
+      "لائحة المعلومات والوثائق": 2,
+      "اللوائح التنفيذية لنظام المرافعات الشرعية": 1,
+      "لائحة نظام المرافعات الشرعية": 1
+    }
+  },
+  "paper_claims": {
+    "total_rows": 13344,
+    "case_facts": {
+      "words_min": 31,
+      "words_max": 398,
+      "words_avg": 181,
+      "steps_min": 3,
+      "steps_max": 11,
+      "steps_avg": 8
+    },
+    "court_reasoning": {
+      "words_min": 18,
+      "words_max": 296,
+      "words_avg": 129,
+      "steps_min": 1,
+      "steps_max": 11,
+      "steps_avg": 6
+    },
+    "applicable_laws": {
+      "words_min": 0,
+      "words_max": 977,
+      "words_avg": 186,
+      "steps_min": 0,
+      "steps_max": 15,
+      "steps_avg": 3
+    },
+    "verdict": {
+      "words_min": 5,
+      "words_max": 26,
+      "words_avg": 13
+    }
+  },
+  "paper_public_dataset_row_difference": -3,
+  "local_file_sha256": {
+    "test-00000-of-00001.parquet": "0bc425145417e8966345af3324bad9627c8bd0f469559684c1d9c8dda81dbae5",
+    "train-00000-of-00001.parquet": "16a642aeff40e9c8d050ca99a81f7a1802cdbee64234778d6c5790d20750ae32"
+  }
+}
