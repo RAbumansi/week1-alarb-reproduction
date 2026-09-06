@@ -64,7 +64,7 @@ meet the course requirement without weakening the holdout, the publisher's
 1,329-row test split is preserved as validation. Only the 12,012-row publisher
 training split is shuffled (seed 42) and divided into 9,339 training rows and
 2,673 development-test rows. The resulting overall shares are 70.002%,
-20.035%, and 9.962%.
+20.036%, and 9.962%.
 
 Split preparation was executed successfully. The final validation file is
 stored separately, made read-only, and excluded from development code. See

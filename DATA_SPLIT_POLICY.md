@@ -11,7 +11,7 @@ and test sets.
 | Dataset | Rows | Actual share | Permitted use |
 |---|---:|---:|---|
 | Training | 9,339 | 70.002% | Fit models and prompts |
-| Test | 2,673 | 20.035% | Debugging and model selection |
+| Test | 2,673 | 20.036% | Debugging and model selection |
 | Validation | 1,329 | 9.962% | One final evaluation only |
 
 The small deviation from exactly 70/20/10 is caused by preserving all 1,329

@@ -33,7 +33,7 @@ The publisher supplies 12,012 training rows and 1,329 test rows. For the course 
 | Dataset | Rows | Share | Location |
 |---|---:|---:|---|
 | Training | 9,339 | 70.002% | `data/development/train.parquet` |
-| Test | 2,673 | 20.035% | `data/development/test.parquet` |
+| Test | 2,673 | 20.036% | `data/development/test.parquet` |
 | Validation | 1,329 | 9.962% | `data/validation_holdout/validation.parquet` |
 
 The validation file is created once, stored separately, and made read-only. Training, debugging, prompt tuning, and model selection must use only `data/development/`. Do not open the holdout until the pipeline is frozen and ready for one final evaluation. See `DATA_SPLIT_POLICY.md`.
