@@ -57,3 +57,15 @@ The paper reports 13,344 cases, while the released data contains 13,341. Its sum
 
 The last two are evidence gaps, not execution failures: the ALARB model code/configs were not released, and the paper's full fine-tuning run requires three A100 GPUs. Exact benchmark scores should not be claimed as reproduced.
 
+## Course three-way split
+
+The official release contains only publisher-defined train and test splits. To
+meet the course requirement without weakening the holdout, the publisher's
+1,329-row test split is preserved as validation. Only the 12,012-row publisher
+training split is shuffled (seed 42) and divided into 9,339 training rows and
+2,673 development-test rows. The resulting overall shares are 70.002%,
+20.035%, and 9.962%.
+
+Split preparation was executed successfully. The final validation file is
+stored separately, made read-only, and excluded from development code. See
+`DATA_SPLIT_POLICY.md` and `artifacts/split_manifest.json`.
