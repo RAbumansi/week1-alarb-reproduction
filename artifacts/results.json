@@ -31,6 +31,36 @@
       }
     },
     {
+      "run_id": "verdict_facts__ollama-qwen3-8b__test__n5",
+      "task": "verdict_facts",
+      "model": "ollama:qwen3:8b",
+      "split": "test",
+      "items": 5,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 5,
+          "share": 1.0
+        },
+        "INCORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
       "run_id": "verdict_laws__constant__test__n150",
       "task": "verdict_laws",
       "model": "constant",
