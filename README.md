@@ -59,13 +59,64 @@ HF_HOME="$PWD/.cache/huggingface" .venv/bin/python audit_alarb.py \
   --local-parquet-dir /path/to/ALARB/data
 ```
 
+## Benchmark harness
+
+The `alarb/` package reimplements the paper's six tasks. ALARB's benchmark code
+was never released, but Appendices B.1 and B.2 print four of the prompts in
+full, which is enough to rebuild the pipeline. Read `DEVIATIONS.md` before
+quoting any number from it — results here are **not** comparable to the paper's
+tables.
+
+Build the task data once (no API key needed):
+
+```bash
+.venv/bin/python -m alarb.cli corpus     # statute articles, recovered from the cases
+.venv/bin/python -m alarb.cli outcomes   # verdict breakdown + majority-class reference
+.venv/bin/python -m alarb.cli mcq        # both article-identification variants
+```
+
+Then run a task, grade it, and score it:
+
+```bash
+export ANTHROPIC_API_KEY=...
+.venv/bin/python -m alarb.cli run --task verdict_facts --model <claude-model> --limit 150
+.venv/bin/python -m alarb.cli judge --run verdict_facts__<model>__test__n150 --judge <claude-model>
+.venv/bin/python -m alarb.cli score --run verdict_facts__<model>__test__n150
+```
+
+Add `--estimate-cost` to `run` to see item and token counts without sending
+anything. Every call is cached under `.cache/llm/`, so an interrupted run
+resumes for free and re-scoring never re-pays for generation.
+
+The six tasks are `verdict_facts`, `verdict_laws`, `verdict_reasoning`,
+`argument_completion`, `mcq_same_statute` and `mcq_semantic`.
+
+Two models need no credentials and give the results something to be read
+against: `--model constant` answers every case with the same generic verdict,
+and `--model random` picks multiple-choice letters at random. `--judge
+heuristic` grades by word overlap offline — useful for checking the pipeline,
+but it is not the paper's metric.
+
+**A model is only interesting if it clearly beats these.** 59.1% of cases end
+in an order against the defendant, and the multiple-choice floor is 25%.
+
+```bash
+.venv/bin/python -m pytest tests/    # 77 tests, no API key required
+```
+
 ## Files
 
 - `official_hf_loader.py`: the published ALARB loading example.
 - `audit_alarb.py`: a verification wrapper that does not expose case text.
 - `prepare_splits.py`: creates deterministic 70/20/10 development and holdout files.
+- `alarb/`: the benchmark harness — data loading, article corpus, prompts, tasks,
+  MCQ construction, inference, judging and scoring.
+- `tests/`: holdout-guard, task-construction and pipeline tests.
 - `artifacts/verification.json`: machine-readable result from the verified run.
 - `artifacts/split_manifest.json`: counts, ratios, source revision, and holdout policy.
+- `artifacts/article_corpus.json`: the 693-article statute corpus rebuilt from the cases.
+- `artifacts/mcq_manifest.json`: MCQ counts, seed, embedder, and distractor rule.
+- `DEVIATIONS.md`: every place this implementation departs from the paper.
 - `DATA_SPLIT_POLICY.md`: rules preventing validation leakage.
 - `EXECUTION_REPORT.md`: what was executed and what could not be reproduced.
 - `PAPER_METHOD.md`: experiment and fine-tuning settings extracted from the paper.
@@ -74,7 +125,13 @@ HF_HOME="$PWD/.cache/huggingface" .venv/bin/python audit_alarb.py \
 
 ## What to tell the instructor
 
-The official ALARB dataset works, but the ALARB inference, MCQ-construction, judging, and fine-tuning code is not public. Ask whether the public-data reproduction is sufficient for Week 1 or whether you should (a) obtain the code from the authors, (b) receive permission to independently implement the paper, or (c) select a parent paper with a released, licensed repository. Do not present the earlier `Thiqah/ArabLegalEval` repository as ALARB's implementation.
+The official ALARB dataset works, but the ALARB inference, MCQ-construction, judging, and fine-tuning code is not public. A search of the paper's own links, the Hugging Face repository, the THIQAH GitHub organisation and the authors' accounts found no implementation.
+
+We therefore took the independent-reimplementation route: the `alarb/` harness rebuilds the benchmark from the prompts printed in Appendices B.1 and B.2, and `DEVIATIONS.md` records every point where it departs from the paper. The paper's reported scores are **not** claimed as reproduced, and our numbers are not comparable to its tables — different judge, different embedder, a smaller article pool, and a different evaluation split.
+
+Worth confirming with the instructor: that an independent reimplementation is acceptable in place of running the authors' code, and that evaluating on our development split rather than the paper's test set is the right call given the sealed-holdout policy.
+
+Do not present the earlier `Thiqah/ArabLegalEval` repository as ALARB's implementation. It belongs to a different paper and carries no licence.
 
 ## Sources
 
