@@ -64,16 +64,25 @@ class TestCorpus:
         assert corpus.parse_law_entry(entry) is None
 
     def test_corpus_articles_are_unique_and_grouped_by_document(self) -> None:
-        articles, stats = corpus.build_corpus(data.load_development())
+        built, stats = corpus.build_corpus(data.load_development())
         assert stats["text_conflicts"] == 0
-        assert len(articles) == sum(
-            len(items) for items in corpus.articles_by_document(articles).values()
-        )
+        assert len(built.articles) == sum(len(items) for items in built.by_document().values())
+
+    def test_every_article_text_is_distinct(self) -> None:
+        """A multiple-choice item must never be able to offer the same article twice."""
+        built, _ = corpus.build_corpus(data.load_development())
+        texts = [article.text for article in built.articles.values()]
+        assert len(set(texts)) == len(texts)
+
+    def test_transposed_sub_article_numbers_resolve_together(self) -> None:
+        built, _ = corpus.build_corpus(data.load_development())
+        resolved = {built.resolve(key) for key in ("اللائحة التنفيذية لنظام المرافعات الشرعية:1/29",
+                                                   "اللائحة التنفيذية لنظام المرافعات الشرعية:29/1")}
+        assert len(resolved) == 1 and None not in resolved
 
     def test_enough_documents_support_same_statute_distractors(self) -> None:
-        articles, _ = corpus.build_corpus(data.load_development())
-        grouped = corpus.articles_by_document(articles)
-        eligible = [document for document, items in grouped.items() if len(items) >= 4]
+        built, _ = corpus.build_corpus(data.load_development())
+        eligible = [doc for doc, items in built.by_document().items() if len(items) >= 4]
         assert len(eligible) >= 9
 
 

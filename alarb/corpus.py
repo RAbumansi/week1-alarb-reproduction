@@ -43,6 +43,21 @@ class Article:
     text: str
 
 
+@dataclass(frozen=True)
+class Corpus:
+    articles: dict[str, Article]
+    aliases: dict[str, str]
+
+    def resolve(self, key: str) -> str | None:
+        """Canonical key for a cited article, or None if it is not in the corpus."""
+        if key in self.articles:
+            return key
+        return self.aliases.get(key)
+
+    def by_document(self) -> dict[str, list[Article]]:
+        return articles_by_document(self.articles)
+
+
 def normalize_arabic(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[أإآٱ]", "ا", value)).strip()
 
@@ -66,7 +81,32 @@ def parse_law_entry(entry: str) -> Article | None:
     return Article(key=f"{document}:{number}", document=document, number=number, text=text)
 
 
-def build_corpus(cases: list[Case]) -> tuple[dict[str, Article], dict[str, int]]:
+def _collapse_duplicate_texts(
+    articles: dict[str, Article],
+) -> tuple[dict[str, Article], dict[str, str]]:
+    """Fold keys whose article text is byte-identical into one.
+
+    Sub-article numbers are cited both ways round across cases -- "1/29" in one
+    and "29/1" in another for the same provision. Rather than guess which half
+    is the article and which the paragraph, treat identical text as proof the
+    two keys denote one article and keep the first by sort order. Without this
+    a multiple-choice item can offer the same article twice.
+    """
+    grouped: dict[str, list[str]] = {}
+    for key in sorted(articles):
+        grouped.setdefault(articles[key].text, []).append(key)
+
+    kept: dict[str, Article] = {}
+    aliases: dict[str, str] = {}
+    for keys in grouped.values():
+        canonical, *duplicates = keys
+        kept[canonical] = articles[canonical]
+        for duplicate in duplicates:
+            aliases[duplicate] = canonical
+    return kept, aliases
+
+
+def build_corpus(cases: list[Case]) -> tuple[Corpus, dict[str, int]]:
     articles: dict[str, Article] = {}
     stats = {"entries_seen": 0, "entries_unparsed": 0, "text_conflicts": 0}
     for case in cases:
@@ -84,7 +124,10 @@ def build_corpus(cases: list[Case]) -> tuple[dict[str, Article], dict[str, int]]
                 stats["text_conflicts"] += 1
                 if len(article.text) > len(existing.text):
                     articles[article.key] = article
-    return articles, stats
+
+    kept, aliases = _collapse_duplicate_texts(articles)
+    stats["duplicate_text_keys_merged"] = len(aliases)
+    return Corpus(articles=kept, aliases=aliases), stats
 
 
 def articles_by_document(articles: dict[str, Article]) -> dict[str, list[Article]]:
@@ -96,17 +139,20 @@ def articles_by_document(articles: dict[str, Article]) -> dict[str, list[Article
     return grouped
 
 
-def load_corpus(path: Path = CORPUS_PATH) -> dict[str, Article]:
+def load_corpus(path: Path = CORPUS_PATH) -> Corpus:
     if not path.is_file():
         raise FileNotFoundError(f"{path} is missing. Run: python -m alarb.cli corpus")
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return {item["key"]: Article(**item) for item in payload["articles"]}
+    return Corpus(
+        articles={item["key"]: Article(**item) for item in payload["articles"]},
+        aliases=payload["aliases"],
+    )
 
 
-def write_corpus(path: Path = CORPUS_PATH) -> dict[str, Article]:
+def write_corpus(path: Path = CORPUS_PATH) -> Corpus:
     cases = load_development()
-    articles, stats = build_corpus(cases)
-    grouped = articles_by_document(articles)
+    corpus, stats = build_corpus(cases)
+    grouped = corpus.by_document()
 
     payload = {
         "source": {
@@ -119,7 +165,7 @@ def write_corpus(path: Path = CORPUS_PATH) -> dict[str, Article]:
             ),
         },
         "counts": {
-            "articles": len(articles),
+            "articles": len(corpus.articles),
             "documents": len(grouped),
             **stats,
         },
@@ -127,8 +173,11 @@ def write_corpus(path: Path = CORPUS_PATH) -> dict[str, Article]:
             document: len(items)
             for document, items in sorted(grouped.items(), key=lambda kv: -len(kv[1]))
         },
-        "articles": [asdict(article) for article in sorted(articles.values(), key=lambda a: a.key)],
+        "aliases": corpus.aliases,
+        "articles": [
+            asdict(article) for article in sorted(corpus.articles.values(), key=lambda a: a.key)
+        ],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return articles
+    return corpus
