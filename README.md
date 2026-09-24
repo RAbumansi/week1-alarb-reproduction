@@ -88,6 +88,9 @@ Add `--estimate-cost` to `run` to see item and token counts without sending
 anything. Every call is cached under `.cache/llm/`, so an interrupted run
 resumes for free and re-scoring never re-pays for generation.
 
+`python -m alarb.cli report` renders every scored run as one comparison table
+and writes `artifacts/results.json`.
+
 The six tasks are `verdict_facts`, `verdict_laws`, `verdict_reasoning`,
 `argument_completion`, `mcq_same_statute` and `mcq_semantic`.
 

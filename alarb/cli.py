@@ -149,6 +149,52 @@ def command_score(args: argparse.Namespace) -> None:
     print(f"Metrics: {config.directory / 'metrics.json'}")
 
 
+RESULTS_PATH = Path("artifacts/results.json")
+
+
+def command_report(args: argparse.Namespace) -> None:
+    runs = runner.collect_runs()
+    if not runs:
+        raise SystemExit("No scored runs yet. Run a task, then judge and score it.")
+
+    verdict_runs = [run for run in runs if "labels" in run]
+    mcq_runs = [run for run in runs if "accuracy" in run]
+
+    if verdict_runs:
+        judges = {run.get("judge") for run in verdict_runs if run.get("judge")}
+        heuristic_only = judges and all(j.startswith("heuristic") for j in judges)
+        print("Verdict prediction\n")
+        if heuristic_only:
+            print("  NOT the paper's metric: graded offline by word overlap, which")
+            print("  scores wording rather than meaning and understates any answer")
+            print("  phrased differently from the court. See DEVIATIONS.md section 3.\n")
+        print(f"  {'task':22} {'model':24} {'n':>5} {'CORRECT':>9} {'PARTIAL':>9} {'WRONG':>9} {'unparsed':>9}")
+        for run in verdict_runs:
+            labels = run["labels"]
+            print(
+                f"  {run['task']:22} {run['model']:24} {run['items']:5} "
+                f"{labels['CORRECT']['share']:8.1%} {labels['PARTIALLY CORRECT']['share']:8.1%} "
+                f"{labels['INCORRECT']['share']:8.1%} {run['unparseable']['share']:8.1%}"
+            )
+        print(f"\n  judge: {', '.join(sorted(judges))}")
+
+    if mcq_runs:
+        print("\nArticle identification — four-way multiple choice\n")
+        print(f"  {'task':22} {'model':24} {'n':>5} {'accuracy':>9} {'floor':>9}")
+        for run in mcq_runs:
+            print(
+                f"  {run['task']:22} {run['model']:24} {run['items']:5} "
+                f"{run['accuracy']:8.1%} {run['random_floor']:8.1%}"
+            )
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(
+        json.dumps({"runs": runs}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    print(f"\nResults: {args.output}")
+    print("Comparability: see DEVIATIONS.md. These are not the paper's numbers.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m alarb.cli", description=__doc__)
     subcommands = parser.add_subparsers(dest="command", required=True)
@@ -212,6 +258,12 @@ def main() -> None:
     score_parser = subcommands.add_parser("score", help="Aggregate a run into metrics.")
     score_parser.add_argument("--run", required=True)
     score_parser.set_defaults(handler=command_score)
+
+    report_parser = subcommands.add_parser(
+        "report", help="Render every scored run as a comparison table."
+    )
+    report_parser.add_argument("--output", type=Path, default=RESULTS_PATH)
+    report_parser.set_defaults(handler=command_report)
 
     args = parser.parse_args()
     args.handler(args)

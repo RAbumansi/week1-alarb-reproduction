@@ -238,3 +238,13 @@ def score(config: RunConfig) -> dict:
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     return metrics
+
+
+def collect_runs(runs_dir: Path = RUNS_DIR) -> list[dict]:
+    """Every scored run on disk, ordered by task then model."""
+    found = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in sorted(runs_dir.glob("*/metrics.json"))
+    ]
+    order = {task: index for index, task in enumerate(tasks.ALL_TASKS)}
+    return sorted(found, key=lambda run: (order.get(run["task"], 99), run["model"]))
