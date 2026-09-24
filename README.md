@@ -75,14 +75,29 @@ Build the task data once (no API key needed):
 .venv/bin/python -m alarb.cli mcq        # both article-identification variants
 ```
 
-Then run a task, grade it, and score it:
+Then run a task, grade it, and score it. Models come from one of three places:
 
 ```bash
-export ANTHROPIC_API_KEY=...
-.venv/bin/python -m alarb.cli run --task verdict_facts --model <claude-model> --limit 150
-.venv/bin/python -m alarb.cli judge --run verdict_facts__<model>__test__n150 --judge <claude-model>
-.venv/bin/python -m alarb.cli score --run verdict_facts__<model>__test__n150
+--model ollama:qwen3:8b      # local, free, no key; also a row in the paper's own table
+--model claude-...           # hosted, needs ANTHROPIC_API_KEY
+--model constant | random    # offline reference points, no key
 ```
+
+```bash
+ollama serve &                                    # for local models
+.venv/bin/python -m alarb.cli run --task verdict_facts --model ollama:qwen3:8b --limit 150
+.venv/bin/python -m alarb.cli judge --run verdict_facts__ollama-qwen3-8b__test__n150 --judge heuristic
+.venv/bin/python -m alarb.cli score --run verdict_facts__ollama-qwen3-8b__test__n150
+```
+
+Any server speaking `/v1/chat/completions` works — Ollama, LM Studio, vLLM —
+via `OLLAMA_HOST`.
+
+Generating locally and judging with a hosted model is a reasonable split.
+Generation is the expensive half (long prompts, one call per case); judging is
+short, because verdicts run 13–26 words. Because generation and judging are
+separate passes, you can generate once locally and re-judge later with a better
+judge without re-running generation.
 
 Add `--estimate-cost` to `run` to see item and token counts without sending
 anything. Every call is cached under `.cache/llm/`, so an interrupted run

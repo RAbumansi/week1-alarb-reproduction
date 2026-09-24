@@ -17,6 +17,8 @@ import hashlib
 import json
 import os
 import random
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,6 +28,8 @@ from alarb.tasks import CHOICE_LETTERS
 CACHE_ROOT = Path(".cache/llm")
 DEFAULT_MAX_TOKENS = 1024
 DEFAULT_TEMPERATURE = 0.0
+OLLAMA_PREFIX = "ollama:"
+LOCAL_TIMEOUT_SECONDS = 600
 
 # A generic ruling for the majority outcome, in the register the dataset uses.
 MAJORITY_CLASS_VERDICT = "إلزام المدعى عليه بسداد المبلغ المطالب به للمدعي."
@@ -136,6 +140,74 @@ class AnthropicModel(Model):
         return completion
 
 
+def ollama_base_url() -> str:
+    host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    if not host.startswith("http"):
+        host = f"http://{host}"
+    return f"{host.rstrip('/')}/v1"
+
+
+class OpenAICompatibleModel(Model):
+    """Any server speaking /v1/chat/completions: Ollama, LM Studio, vLLM.
+
+    Local generation is slow enough that caching matters more here than it does
+    for a hosted model -- a re-run that would take an hour becomes instant.
+    """
+
+    def __init__(
+        self,
+        model: str,
+        base_url: str,
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+        temperature: float = DEFAULT_TEMPERATURE,
+        cache: CompletionCache | None = None,
+        timeout: int = LOCAL_TIMEOUT_SECONDS,
+    ) -> None:
+        self.name = model
+        self.base_url = base_url
+        self.params = {"max_tokens": max_tokens, "temperature": temperature}
+        self.cache = cache or CompletionCache()
+        self._timeout = timeout
+
+    def complete(self, prompt: str) -> Completion:
+        key = self.cache.key(f"{self.base_url}|{self.name}", prompt, self.params)
+        hit = self.cache.get(key)
+        if hit is not None:
+            return hit
+
+        body = json.dumps(
+            {
+                "model": self.name,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": self.params["max_tokens"],
+                "temperature": self.params["temperature"],
+            }
+        ).encode("utf-8")
+        request = urllib.request.Request(
+            f"{self.base_url}/chat/completions",
+            data=body,
+            headers={"Content-Type": "application/json", "Authorization": "Bearer local"},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=self._timeout) as response:
+                payload = json.loads(response.read())
+        except urllib.error.URLError as error:
+            raise RuntimeError(
+                f"Could not reach a model server at {self.base_url} ({error}). "
+                "Start one with: ollama serve"
+            ) from error
+
+        usage = payload.get("usage") or {}
+        completion = Completion(
+            text=payload["choices"][0]["message"]["content"],
+            model=self.name,
+            input_tokens=usage.get("prompt_tokens", estimate_tokens(prompt)),
+            output_tokens=usage.get("completion_tokens", 0),
+        )
+        self.cache.put(key, completion)
+        return completion
+
+
 class ConstantModel(Model):
     """Answers every verdict task with the same generic ruling."""
 
@@ -181,4 +253,11 @@ def get_model(
         return ConstantModel()
     if name == "random":
         return RandomChoiceModel()
+    if name.startswith(OLLAMA_PREFIX):
+        return OpenAICompatibleModel(
+            name[len(OLLAMA_PREFIX) :],
+            ollama_base_url(),
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
     return AnthropicModel(name, max_tokens=max_tokens, temperature=temperature)

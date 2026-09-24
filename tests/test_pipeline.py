@@ -123,6 +123,36 @@ class TestOfflineModels:
             providers.get_model("claude-sonnet-5")
 
 
+class TestLocalModels:
+    def test_ollama_prefix_selects_a_local_server(self) -> None:
+        model = providers.get_model("ollama:qwen3:8b")
+        assert isinstance(model, providers.OpenAICompatibleModel)
+        # Only the leading "ollama:" is stripped; the tag colon is part of the name.
+        assert model.name == "qwen3:8b"
+
+    def test_local_models_need_no_api_key(self, monkeypatch) -> None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        assert providers.get_model("ollama:qwen3:8b") is not None
+
+    def test_base_url_follows_ollama_host(self, monkeypatch) -> None:
+        monkeypatch.setenv("OLLAMA_HOST", "http://elsewhere:9999")
+        assert providers.ollama_base_url() == "http://elsewhere:9999/v1"
+
+    def test_bare_host_gets_a_scheme(self, monkeypatch) -> None:
+        monkeypatch.setenv("OLLAMA_HOST", "localhost:11434")
+        assert providers.ollama_base_url() == "http://localhost:11434/v1"
+
+    def test_unreachable_server_explains_how_to_start_one(self, tmp_path: Path) -> None:
+        model = providers.OpenAICompatibleModel(
+            "qwen3:8b",
+            "http://localhost:59999/v1",
+            cache=providers.CompletionCache(tmp_path),
+            timeout=2,
+        )
+        with pytest.raises(RuntimeError, match="ollama serve"):
+            model.complete("hello")
+
+
 class TestSampling:
     def test_sample_is_deterministic(self) -> None:
         cases = data.load_split("test")
