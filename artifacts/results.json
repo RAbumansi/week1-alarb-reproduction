@@ -1,0 +1,182 @@
+{
+  "runs": [
+    {
+      "run_id": "verdict_facts__constant__test__n150",
+      "task": "verdict_facts",
+      "model": "constant",
+      "split": "test",
+      "items": 150,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 8,
+          "share": 0.0533
+        },
+        "INCORRECT": {
+          "count": 142,
+          "share": 0.9467
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "verdict_facts__ollama-qwen3-8b__test__n5",
+      "task": "verdict_facts",
+      "model": "ollama:qwen3:8b",
+      "split": "test",
+      "items": 5,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 5,
+          "share": 1.0
+        },
+        "INCORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "verdict_laws__constant__test__n150",
+      "task": "verdict_laws",
+      "model": "constant",
+      "split": "test",
+      "items": 133,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 6,
+          "share": 0.0451
+        },
+        "INCORRECT": {
+          "count": 127,
+          "share": 0.9549
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "verdict_reasoning__constant__test__n150",
+      "task": "verdict_reasoning",
+      "model": "constant",
+      "split": "test",
+      "items": 150,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 8,
+          "share": 0.0533
+        },
+        "INCORRECT": {
+          "count": 142,
+          "share": 0.9467
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "argument_completion__constant__test__n150__omit2",
+      "task": "argument_completion",
+      "model": "constant",
+      "split": "test",
+      "items": 150,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 8,
+          "share": 0.0533
+        },
+        "INCORRECT": {
+          "count": 142,
+          "share": 0.9467
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "mcq_same_statute__random__test__n150",
+      "task": "mcq_same_statute",
+      "model": "random",
+      "split": "test",
+      "items": 133,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "accuracy": 0.2556,
+      "correct": 34,
+      "random_floor": 0.25
+    },
+    {
+      "run_id": "mcq_semantic__random__test__n150",
+      "task": "mcq_semantic",
+      "model": "random",
+      "split": "test",
+      "items": 133,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "accuracy": 0.2632,
+      "correct": 35,
+      "random_floor": 0.25
+    }
+  ]
+}

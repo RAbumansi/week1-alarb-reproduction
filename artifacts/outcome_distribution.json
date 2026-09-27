@@ -1,0 +1,84 @@
+{
+  "cases": 12012,
+  "fine_labels": {
+    "obligation_granted": {
+      "count": 6966,
+      "share": 0.5799
+    },
+    "inadmissible": {
+      "count": 1486,
+      "share": 0.1237
+    },
+    "settlement": {
+      "count": 923,
+      "share": 0.0768
+    },
+    "claim_rejected": {
+      "count": 827,
+      "share": 0.0688
+    },
+    "no_jurisdiction": {
+      "count": 757,
+      "share": 0.063
+    },
+    "withdrawn": {
+      "count": 329,
+      "share": 0.0274
+    },
+    "unclassified": {
+      "count": 288,
+      "share": 0.024
+    },
+    "extinguished": {
+      "count": 286,
+      "share": 0.0238
+    },
+    "liability_established": {
+      "count": 102,
+      "share": 0.0085
+    },
+    "contract_rescinded": {
+      "count": 29,
+      "share": 0.0024
+    },
+    "set_aside": {
+      "count": 16,
+      "share": 0.0013
+    },
+    "struck_out": {
+      "count": 3,
+      "share": 0.0002
+    }
+  },
+  "paper_categories": {
+    "for_plaintiff": {
+      "count": 7097,
+      "share": 0.5908
+    },
+    "court_dismissal": {
+      "count": 2877,
+      "share": 0.2395
+    },
+    "settlement": {
+      "count": 923,
+      "share": 0.0768
+    },
+    "for_defendant": {
+      "count": 827,
+      "share": 0.0688
+    },
+    "unclassified": {
+      "count": 288,
+      "share": 0.024
+    }
+  },
+  "majority_class": {
+    "label": "for_plaintiff",
+    "share": 0.5908
+  },
+  "paper_table_3": {
+    "for_plaintiff": 0.62,
+    "for_defendant": 0.05,
+    "court_dismissal": 0.33
+  }
+}
