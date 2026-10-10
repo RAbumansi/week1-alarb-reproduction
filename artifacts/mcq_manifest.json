@@ -1,0 +1,32 @@
+{
+  "source_split": "data/development/test.parquet",
+  "cases": 2673,
+  "seed": 42,
+  "choices_per_item": 4,
+  "embedder": "sentence-transformers",
+  "embedder_model": "intfloat/multilingual-e5-base",
+  "corpus_articles": 693,
+  "distractor_rule": "Distractors exclude every article cited by the case, not only the article being asked about, so no item has a second correct answer.",
+  "paper_reference": {
+    "items_per_variant": 1159,
+    "source_cases": 1329
+  },
+  "tasks": {
+    "mcq_same_statute": {
+      "items": 2472,
+      "skipped": {
+        "no_cited_article": 201,
+        "document_too_small": 0
+      },
+      "path": "data/tasks/mcq_same_statute.test.jsonl"
+    },
+    "mcq_semantic": {
+      "items": 2472,
+      "skipped": {
+        "no_cited_article": 201,
+        "too_few_neighbours": 0
+      },
+      "path": "data/tasks/mcq_semantic.test.jsonl"
+    }
+  }
+}
