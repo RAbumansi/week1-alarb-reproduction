@@ -62,10 +62,15 @@ def normalize_arabic(value: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[أإآٱ]", "ا", value)).strip()
 
 
+_NORMALIZED_ALIASES = {
+    normalize_arabic(key): normalize_arabic(value)
+    for key, value in _DOCUMENT_ALIASES.items()
+}
+
+
 def canonical_document(document: str) -> str:
     normalized = normalize_arabic(document)
-    aliases = {normalize_arabic(k): normalize_arabic(v) for k, v in _DOCUMENT_ALIASES.items()}
-    return aliases.get(normalized, normalized)
+    return _NORMALIZED_ALIASES.get(normalized, normalized)
 
 
 def parse_law_entry(entry: str) -> Article | None:

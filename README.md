@@ -104,7 +104,43 @@ anything. Every call is cached under `.cache/llm/`, so an interrupted run
 resumes for free and re-scoring never re-pays for generation.
 
 `python -m alarb.cli report` renders every scored run as one comparison table
-and writes `artifacts/results.json`.
+and writes `artifacts/results.json`. It warns when the runs in it were built
+from different corpora or prompts, since those scores do not mean the same
+thing; each run records a fingerprint of its inputs in `config.json`.
+
+Runs resume. Interrupting one and re-running the same command continues from
+where it stopped rather than starting over.
+
+### Validating the judge
+
+The judge decides CORRECT against PARTIALLY CORRECT against INCORRECT, so it
+*is* the metric and an unchecked judge leaves every number unverified:
+
+```bash
+.venv/bin/python -m alarb.cli agreement --run <run_id> --sample 30
+# fill the human_label column in the CSV it writes, then
+.venv/bin/python -m alarb.cli agreement --run <run_id> --score
+```
+
+The sample is stratified across the judge's own labels and shuffled, so row
+order gives nothing away. It reports raw agreement and Cohen's kappa — kappa
+matters because raw agreement flatters a judge that leans on one label.
+
+### Concurrency
+
+`--concurrency` sets parallel requests. Hosted models benefit substantially;
+**local models need the server configured to match, or it does nothing.**
+Measured on an M2 with Qwen3-8B:
+
+| setup | per case |
+|---|---|
+| serial | 50.4s |
+| `--concurrency 4`, Ollama default | 57.5s — *slower*, pure queueing overhead |
+| `--concurrency 4` with `OLLAMA_NUM_PARALLEL=4` | 38.1s |
+
+Ollama defaults to `OLLAMA_NUM_PARALLEL=1` and serializes everything, so start
+it as `OLLAMA_NUM_PARALLEL=4 ollama serve`. The 1.3x ceiling is memory
+bandwidth, not dispatch — don't expect more from one laptop.
 
 The six tasks are `verdict_facts`, `verdict_laws`, `verdict_reasoning`,
 `argument_completion`, `mcq_same_statute` and `mcq_semantic`.

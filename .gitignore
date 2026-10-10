@@ -4,3 +4,8 @@ __pycache__/
 data/
 .pytest_cache/
 runs/
+
+# Judge review sheets quote case facts and verdicts verbatim, and the published
+# dataset still contains personal names (see AGENTIC_PROJECT_SCOPE.md). This
+# repository is public; keep the case text out of it.
+artifacts/judge_review/
