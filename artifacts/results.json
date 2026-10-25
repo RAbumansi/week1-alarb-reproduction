@@ -10,6 +10,12 @@
         "count": 0,
         "share": 0.0
       },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "62220d62f712",
+        "harness_commit": "ecc5d9a"
+      },
       "judge": "heuristic:token-overlap",
       "labels": {
         "CORRECT": {
@@ -31,6 +37,42 @@
       }
     },
     {
+      "run_id": "verdict_facts__ollama-qwen3-8b__test__n20",
+      "task": "verdict_facts",
+      "model": "ollama:qwen3:8b",
+      "split": "test",
+      "items": 20,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "62220d62f712",
+        "harness_commit": "ecc5d9a"
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 2,
+          "share": 0.1
+        },
+        "PARTIALLY CORRECT": {
+          "count": 10,
+          "share": 0.5
+        },
+        "INCORRECT": {
+          "count": 8,
+          "share": 0.4
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
       "run_id": "verdict_facts__ollama-qwen3-8b__test__n5",
       "task": "verdict_facts",
       "model": "ollama:qwen3:8b",
@@ -39,6 +81,12 @@
       "unparseable": {
         "count": 0,
         "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "62220d62f712",
+        "harness_commit": "ecc5d9a"
       },
       "judge": "heuristic:token-overlap",
       "labels": {
@@ -70,6 +118,12 @@
         "count": 0,
         "share": 0.0
       },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "072032ec2aaf",
+        "harness_commit": "ecc5d9a"
+      },
       "judge": "heuristic:token-overlap",
       "labels": {
         "CORRECT": {
@@ -99,6 +153,12 @@
       "unparseable": {
         "count": 0,
         "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "e062fa241f99",
+        "harness_commit": "ecc5d9a"
       },
       "judge": "heuristic:token-overlap",
       "labels": {
@@ -130,6 +190,12 @@
         "count": 0,
         "share": 0.0
       },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "8755750a7cbe",
+        "harness_commit": "ecc5d9a"
+      },
       "judge": "heuristic:token-overlap",
       "labels": {
         "CORRECT": {
@@ -160,6 +226,12 @@
         "count": 0,
         "share": 0.0
       },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "54135dfe5f00",
+        "harness_commit": "ecc5d9a"
+      },
       "accuracy": 0.2556,
       "correct": 34,
       "random_floor": 0.25
@@ -173,6 +245,12 @@
       "unparseable": {
         "count": 0,
         "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "54135dfe5f00",
+        "harness_commit": "ecc5d9a"
       },
       "accuracy": 0.2632,
       "correct": 35,

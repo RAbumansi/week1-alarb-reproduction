@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import random
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -30,6 +31,8 @@ DEFAULT_MAX_TOKENS = 1024
 DEFAULT_TEMPERATURE = 0.0
 OLLAMA_PREFIX = "ollama:"
 LOCAL_TIMEOUT_SECONDS = 600
+MAX_ATTEMPTS = 4
+RETRY_BACKOFF_SECONDS = 2.0
 
 # A generic ruling for the majority outcome, in the register the dataset uses.
 MAJORITY_CLASS_VERDICT = "إلزام المدعى عليه بسداد المبلغ المطالب به للمدعي."
@@ -117,7 +120,7 @@ class AnthropicModel(Model):
         self.name = model
         self.params = {"max_tokens": max_tokens, "temperature": temperature}
         self.cache = cache or CompletionCache()
-        self._client = anthropic.Anthropic()
+        self._client = anthropic.Anthropic(max_retries=MAX_ATTEMPTS)
 
     def complete(self, prompt: str) -> Completion:
         key = self.cache.key(self.name, prompt, self.params)
@@ -188,14 +191,21 @@ class OpenAICompatibleModel(Model):
             data=body,
             headers={"Content-Type": "application/json", "Authorization": "Bearer local"},
         )
-        try:
-            with urllib.request.urlopen(request, timeout=self._timeout) as response:
-                payload = json.loads(response.read())
-        except urllib.error.URLError as error:
-            raise RuntimeError(
-                f"Could not reach a model server at {self.base_url} ({error}). "
-                "Start one with: ollama serve"
-            ) from error
+        # A long run should survive a dropped connection or a server still
+        # loading the model, rather than losing an hour of work to one blip.
+        payload = None
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                with urllib.request.urlopen(request, timeout=self._timeout) as response:
+                    payload = json.loads(response.read())
+                break
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+                if attempt == MAX_ATTEMPTS:
+                    raise RuntimeError(
+                        f"Could not reach a model server at {self.base_url} after "
+                        f"{MAX_ATTEMPTS} attempts ({error}). Start one with: ollama serve"
+                    ) from error
+                time.sleep(RETRY_BACKOFF_SECONDS * attempt)
 
         usage = payload.get("usage") or {}
         completion = Completion(

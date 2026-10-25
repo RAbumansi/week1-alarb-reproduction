@@ -15,16 +15,18 @@ from __future__ import annotations
 import json
 import random
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from alarb import mcq, outcomes, parsing, tasks
+from alarb import mcq, outcomes, parsing, provenance, tasks
 from alarb.data import Case, load_split
 from alarb.judge import LABELS, UNPARSEABLE, Judge
 from alarb.providers import Model
 
 
 RUNS_DIR = Path("runs")
+DEFAULT_CONCURRENCY = 4
 
 
 @dataclass
@@ -102,58 +104,92 @@ def build_items(config: RunConfig) -> list[tasks.TaskItem]:
     ]
 
 
-def run_inference(config: RunConfig, model: Model, progress_every: int = 25) -> Path:
+def completed_case_ids(path: Path) -> set[str]:
+    """Cases already written to a predictions file, so a run can pick up where it
+    stopped. Any trailing partial line is ignored."""
+    if not path.is_file():
+        return set()
+    done = set()
+    with path.open(encoding="utf-8") as stream:
+        for line in stream:
+            try:
+                done.add(json.loads(line)["case_id"])
+            except (json.JSONDecodeError, KeyError):
+                continue
+    return done
+
+
+def _predict(item: tasks.TaskItem, model: Model, is_mcq: bool) -> dict:
+    completion = model.complete(item.prompt)
+    if is_mcq:
+        answer = parsing.parse_mcq_answer(completion.text)
+        parsed, ok = {"answer": answer}, answer is not None
+    else:
+        verdict = parsing.parse_verdict(completion.text)
+        parsed = {"verdict": verdict.verdict, "reasoning": verdict.reasoning}
+        ok = verdict.ok
+    return {
+        "case_id": item.case_id,
+        "task": item.task,
+        "reference": item.reference,
+        "parsed": parsed,
+        "parsed_ok": ok,
+        "raw": completion.text,
+        "model": completion.model,
+        "cached": completion.cached,
+        "input_tokens": completion.input_tokens,
+        "output_tokens": completion.output_tokens,
+        "metadata": item.metadata,
+    }
+
+
+def run_inference(
+    config: RunConfig,
+    model: Model,
+    concurrency: int = DEFAULT_CONCURRENCY,
+    resume: bool = True,
+    progress_every: int = 25,
+) -> Path:
     items = build_items(config)
     directory = config.directory
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "config.json").write_text(
-        json.dumps(asdict(config) | {"run_id": config.run_id}, ensure_ascii=False, indent=2)
+        json.dumps(
+            asdict(config)
+            | {"run_id": config.run_id, "provenance": provenance.current(config.task)},
+            ensure_ascii=False,
+            indent=2,
+        )
         + "\n",
         encoding="utf-8",
     )
 
-    is_mcq = config.task in tasks.MCQ_TASKS
     predictions = directory / "predictions.jsonl"
+    already = completed_case_ids(predictions) if resume else set()
+    pending = [item for item in items if item.case_id not in already]
+    if already:
+        print(f"  resuming: {len(already)} done, {len(pending)} to go")
+    if not pending:
+        print(f"  {len(already)} items, nothing left to do")
+        return predictions
+
+    is_mcq = config.task in tasks.MCQ_TASKS
     totals = Counter()
-    with predictions.open("w", encoding="utf-8") as stream:
-        for index, item in enumerate(items, start=1):
-            completion = model.complete(item.prompt)
-            if is_mcq:
-                answer = parsing.parse_mcq_answer(completion.text)
-                parsed = {"answer": answer}
-                ok = answer is not None
-            else:
-                verdict = parsing.parse_verdict(completion.text)
-                parsed = {"verdict": verdict.verdict, "reasoning": verdict.reasoning}
-                ok = verdict.ok
-
-            totals["items"] += 1
-            totals["unparseable"] += 0 if ok else 1
-            totals["cached"] += 1 if completion.cached else 0
-            totals["input_tokens"] += completion.input_tokens
-            totals["output_tokens"] += completion.output_tokens
-
-            stream.write(
-                json.dumps(
-                    {
-                        "case_id": item.case_id,
-                        "task": item.task,
-                        "reference": item.reference,
-                        "parsed": parsed,
-                        "parsed_ok": ok,
-                        "raw": completion.text,
-                        "model": completion.model,
-                        "cached": completion.cached,
-                        "input_tokens": completion.input_tokens,
-                        "output_tokens": completion.output_tokens,
-                        "metadata": item.metadata,
-                    },
-                    ensure_ascii=False,
-                )
-                + "\n"
-            )
-            if progress_every and index % progress_every == 0:
-                print(f"  {index}/{len(items)} items", flush=True)
+    # Results are written in input order so the file stays diffable, and each is
+    # flushed as it arrives so an interrupted run keeps everything up to that point.
+    with predictions.open("a" if already else "w", encoding="utf-8") as stream:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            results = pool.map(lambda item: _predict(item, model, is_mcq), pending)
+            for index, record in enumerate(results, start=1):
+                totals["items"] += 1
+                totals["unparseable"] += 0 if record["parsed_ok"] else 1
+                totals["cached"] += 1 if record["cached"] else 0
+                totals["input_tokens"] += record["input_tokens"]
+                totals["output_tokens"] += record["output_tokens"]
+                stream.write(json.dumps(record, ensure_ascii=False) + "\n")
+                stream.flush()
+                if progress_every and index % progress_every == 0:
+                    print(f"  {index}/{len(pending)} items", flush=True)
 
     print(
         f"  {totals['items']} items, {totals['cached']} from cache, "
@@ -168,7 +204,26 @@ def read_jsonl(path: Path) -> list[dict]:
         return [json.loads(line) for line in stream]
 
 
-def run_judging(config: RunConfig, judge: Judge, progress_every: int = 25) -> Path:
+def _judge_one(record: dict, judge: Judge) -> dict:
+    prediction = record["parsed"]["verdict"]
+    if not record["parsed_ok"] or not prediction:
+        return {"case_id": record["case_id"], "label": UNPARSEABLE, "judge": judge.name, "raw": ""}
+    judged = judge.judge(record["reference"], prediction)
+    return {
+        "case_id": record["case_id"],
+        "label": judged.label,
+        "judge": judged.judge,
+        "raw": judged.raw,
+    }
+
+
+def run_judging(
+    config: RunConfig,
+    judge: Judge,
+    concurrency: int = DEFAULT_CONCURRENCY,
+    resume: bool = True,
+    progress_every: int = 25,
+) -> Path:
     if config.task in tasks.MCQ_TASKS:
         raise ValueError(
             "Multiple-choice tasks are scored by comparing letters; they need no judge."
@@ -177,19 +232,22 @@ def run_judging(config: RunConfig, judge: Judge, progress_every: int = 25) -> Pa
     records = read_jsonl(directory / "predictions.jsonl")
     judgments = directory / "judgments.jsonl"
 
-    with judgments.open("w", encoding="utf-8") as stream:
-        for index, record in enumerate(records, start=1):
-            prediction = record["parsed"]["verdict"]
-            if not record["parsed_ok"] or not prediction:
-                result = {"label": UNPARSEABLE, "judge": judge.name, "raw": ""}
-            else:
-                judged = judge.judge(record["reference"], prediction)
-                result = {"label": judged.label, "judge": judged.judge, "raw": judged.raw}
-            stream.write(
-                json.dumps({"case_id": record["case_id"], **result}, ensure_ascii=False) + "\n"
-            )
-            if progress_every and index % progress_every == 0:
-                print(f"  {index}/{len(records)} judged", flush=True)
+    already = completed_case_ids(judgments) if resume else set()
+    pending = [record for record in records if record["case_id"] not in already]
+    if already:
+        print(f"  resuming: {len(already)} judged, {len(pending)} to go")
+    if not pending:
+        print(f"  {len(already)} judged, nothing left to do")
+        return judgments
+
+    with judgments.open("a" if already else "w", encoding="utf-8") as stream:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            results = pool.map(lambda record: _judge_one(record, judge), pending)
+            for index, result in enumerate(results, start=1):
+                stream.write(json.dumps(result, ensure_ascii=False) + "\n")
+                stream.flush()
+                if progress_every and index % progress_every == 0:
+                    print(f"  {index}/{len(pending)} judged", flush=True)
     return judgments
 
 
@@ -199,6 +257,10 @@ def score(config: RunConfig) -> dict:
     total = len(predictions)
     unparseable = sum(1 for record in predictions if not record["parsed_ok"])
 
+    config_path = directory / "config.json"
+    stored = (
+        json.loads(config_path.read_text(encoding="utf-8")) if config_path.is_file() else {}
+    )
     metrics: dict = {
         "run_id": config.run_id,
         "task": config.task,
@@ -206,6 +268,7 @@ def score(config: RunConfig) -> dict:
         "split": config.split,
         "items": total,
         "unparseable": {"count": unparseable, "share": round(unparseable / total, 4)},
+        "provenance": stored.get("provenance", {}),
     }
 
     if config.task in tasks.MCQ_TASKS:

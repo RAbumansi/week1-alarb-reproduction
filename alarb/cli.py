@@ -4,11 +4,22 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 from pathlib import Path
 
-from alarb import corpus as corpus_module
-from alarb import data, embeddings, judge as judge_module, mcq, outcomes, providers, runner, tasks
+from alarb import agreement, corpus as corpus_module
+from alarb import (
+    data,
+    embeddings,
+    judge as judge_module,
+    mcq,
+    outcomes,
+    provenance,
+    providers,
+    runner,
+    tasks,
+)
 
 
 OUTCOME_PATH = Path("artifacts/outcome_distribution.json")
@@ -19,8 +30,11 @@ def load_run_config(run_id: str) -> runner.RunConfig:
     if not path.is_file():
         raise SystemExit(f"No run at {path}. Run the task first.")
     payload = json.loads(path.read_text(encoding="utf-8"))
-    payload.pop("run_id", None)
-    return runner.RunConfig(**payload)
+    # config.json also carries derived metadata (run_id, provenance) that is not
+    # part of the config itself. Keep only real fields so adding more metadata
+    # later cannot break loading an old run.
+    fields = {field.name for field in dataclasses.fields(runner.RunConfig)}
+    return runner.RunConfig(**{k: v for k, v in payload.items() if k in fields})
 
 
 def command_corpus(args: argparse.Namespace) -> None:
@@ -114,7 +128,8 @@ def command_run(args: argparse.Namespace) -> None:
         return
 
     model = providers.get_model(args.model, args.max_tokens, args.temperature)
-    runner.run_inference(config, model)
+    print(f"  concurrency: {args.concurrency}")
+    runner.run_inference(config, model, concurrency=args.concurrency, resume=not args.no_resume)
     print(f"Predictions: {config.directory / 'predictions.jsonl'}")
     if config.task in tasks.MCQ_TASKS:
         print(f"Next: python -m alarb.cli score --run {config.run_id}")
@@ -128,8 +143,8 @@ def command_judge(args: argparse.Namespace) -> None:
     if args.judge != "heuristic":
         model = providers.get_model(args.judge, args.max_tokens, args.temperature)
     judge = judge_module.get_judge(args.judge, model)
-    print(f"Judging {config.run_id} with {judge.name}")
-    runner.run_judging(config, judge)
+    print(f"Judging {config.run_id} with {judge.name} (concurrency {args.concurrency})")
+    runner.run_judging(config, judge, concurrency=args.concurrency, resume=not args.no_resume)
     print(f"Judgments: {config.directory / 'judgments.jsonl'}")
     print(f"Next: python -m alarb.cli score --run {config.run_id}")
 
@@ -150,6 +165,59 @@ def command_score(args: argparse.Namespace) -> None:
 
 
 RESULTS_PATH = Path("artifacts/results.json")
+
+
+def command_agreement(args: argparse.Namespace) -> None:
+    config = load_run_config(args.run)
+    sheet = agreement.REVIEW_DIR / f"{config.run_id}.csv"
+
+    if args.score:
+        if not sheet.is_file():
+            raise SystemExit(f"No review sheet at {sheet}. Create one without --score first.")
+        report = agreement.score_agreement(agreement.read_review_sheet(sheet))
+        report_path = agreement.REVIEW_DIR / f"{config.run_id}.agreement.json"
+        agreement.write_report(report, report_path)
+
+        print(f"Judge agreement for {config.run_id}")
+        print(f"  reviewed by hand : {report['reviewed']}")
+        print(f"  raw agreement    : {report['raw_agreement']:.1%}")
+        if report["cohens_kappa"] is None:
+            print(f"  Cohen's kappa    : {report['kappa_reading']}")
+        else:
+            print(
+                f"  Cohen's kappa    : {report['cohens_kappa']:.3f}  ({report['kappa_reading']})"
+            )
+        if report["unlabelled"]:
+            print(f"  still unlabelled : {report['unlabelled']}")
+        for label in report["invalid_labels"]:
+            print(f"  ignored bad label: {label}")
+        if report["disagreements"]:
+            print(f"\n  where they differ ({len(report['disagreements'])}):")
+            for row in report["disagreements"][:10]:
+                print(f"    judge={row['judge']:18} human={row['human']:18} {row['case_id']}")
+        print(f"\nReport: {report_path}")
+        return
+
+    if sheet.is_file() and not args.force:
+        raise SystemExit(
+            f"{sheet} already exists and may hold your labels. Pass --force to replace it, "
+            "or --score to read it."
+        )
+    rows = agreement.sample_for_review(
+        runner.read_jsonl(config.directory / "predictions.jsonl"),
+        runner.read_jsonl(config.directory / "judgments.jsonl"),
+        args.sample,
+        args.seed,
+    )
+    agreement.write_review_sheet(rows, sheet)
+    print(f"Wrote {len(rows)} items for review, stratified across the judge's labels.")
+    print(f"  {sheet}")
+    print(
+        f"\nFill the '{agreement.HUMAN_COLUMN}' column with one of "
+        f"{', '.join(agreement.VALID_LABELS)}, judging each prediction against the"
+    )
+    print("gold verdict yourself. Then:")
+    print(f"  python -m alarb.cli agreement --run {config.run_id} --score")
 
 
 def command_report(args: argparse.Namespace) -> None:
@@ -191,6 +259,19 @@ def command_report(args: argparse.Namespace) -> None:
     args.output.write_text(
         json.dumps({"runs": runs}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+    ok, differing, unfingerprinted = provenance.comparable(runs)
+    if differing:
+        print("\n  WARNING: these runs were not built from the same inputs.")
+        print(f"  Differing: {', '.join(differing)}.")
+        print("  Those scores are not comparable to each other. Re-run the affected")
+        print("  tasks against one corpus and one set of prompts.")
+    if unfingerprinted:
+        print(f"\n  NOTE: {len(unfingerprinted)} run(s) predate provenance tracking and")
+        print("  record no fingerprint, so they cannot be confirmed comparable:")
+        for run_id in unfingerprinted[:6]:
+            print(f"    {run_id}")
+        print("  Re-run them to bring them under the same check.")
+
     print(f"\nResults: {args.output}")
     print("Comparability: see DEVIATIONS.md. These are not the paper's numbers.")
 
@@ -242,6 +323,18 @@ def main() -> None:
         action="store_true",
         help="Report item and token counts without calling the model.",
     )
+    run_parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=runner.DEFAULT_CONCURRENCY,
+        help="Parallel requests. Hosted models tolerate 8-16; a local model on a "
+        "laptop is better at 2-4.",
+    )
+    run_parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Start over instead of continuing from what the run already has.",
+    )
     run_parser.set_defaults(handler=command_run)
 
     judge_parser = subcommands.add_parser("judge", help="Grade a run's generated verdicts.")
@@ -253,7 +346,26 @@ def main() -> None:
     )
     judge_parser.add_argument("--max-tokens", type=int, default=providers.DEFAULT_MAX_TOKENS)
     judge_parser.add_argument("--temperature", type=float, default=providers.DEFAULT_TEMPERATURE)
+    judge_parser.add_argument(
+        "--concurrency", type=int, default=runner.DEFAULT_CONCURRENCY
+    )
+    judge_parser.add_argument("--no-resume", action="store_true")
     judge_parser.set_defaults(handler=command_judge)
+
+    agreement_parser = subcommands.add_parser(
+        "agreement",
+        help="Validate the judge against your own labels on a stratified sample.",
+    )
+    agreement_parser.add_argument("--run", required=True)
+    agreement_parser.add_argument("--sample", type=int, default=30)
+    agreement_parser.add_argument("--seed", type=int, default=42)
+    agreement_parser.add_argument(
+        "--score", action="store_true", help="Read the filled sheet and report agreement."
+    )
+    agreement_parser.add_argument(
+        "--force", action="store_true", help="Replace an existing review sheet."
+    )
+    agreement_parser.set_defaults(handler=command_agreement)
 
     score_parser = subcommands.add_parser("score", help="Aggregate a run into metrics.")
     score_parser.add_argument("--run", required=True)
