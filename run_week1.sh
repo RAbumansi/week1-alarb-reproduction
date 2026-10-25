@@ -18,7 +18,7 @@ if [[ ! -d .venv ]]; then
   "$PYTHON_BIN" -m venv .venv
 fi
 
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements-core.txt
 HF_HOME="$PROJECT_DIR/.cache/huggingface" .venv/bin/python official_hf_loader.py
 HF_HOME="$PROJECT_DIR/.cache/huggingface" .venv/bin/python audit_alarb.py
 HF_HOME="$PROJECT_DIR/.cache/huggingface" .venv/bin/python prepare_splits.py

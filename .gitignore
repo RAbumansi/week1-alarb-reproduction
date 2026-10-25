@@ -1,5 +1,7 @@
 .cache/
 .venv/
+.venv-*/
+.DS_Store
 __pycache__/
 data/
 .pytest_cache/

@@ -1,0 +1,71 @@
+{
+  "status": "PASS",
+  "source": {
+    "id": "THIQAH-RD/ALARB",
+    "url": "https://huggingface.co/datasets/THIQAH-RD/ALARB",
+    "git_commit": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+    "license": "Apache-2.0",
+    "files": {
+      "train-00000-of-00001.parquet": {
+        "bytes": 19133223,
+        "sha256": "16a642aeff40e9c8d050ca99a81f7a1802cdbee64234778d6c5790d20750ae32"
+      },
+      "test-00000-of-00001.parquet": {
+        "bytes": 2145231,
+        "sha256": "0bc425145417e8966345af3324bad9627c8bd0f469559684c1d9c8dda81dbae5"
+      }
+    }
+  },
+  "parent_paper": {
+    "title": "ALARB: An Arabic Legal Argument Reasoning Benchmark",
+    "arxiv_id": "2510.00694v1",
+    "url": "https://arxiv.org/abs/2510.00694",
+    "submitted": "2025-10-01",
+    "license": "CC BY 4.0"
+  },
+  "official_rows": {
+    "train": 12012,
+    "test": 1329,
+    "total": 13341
+  },
+  "course_rows": {
+    "train": 9339,
+    "test": 2673,
+    "validation": 1329
+  },
+  "files": {
+    "original/train-00000-of-00001.parquet": {
+      "bytes": 19133223,
+      "sha256": "16a642aeff40e9c8d050ca99a81f7a1802cdbee64234778d6c5790d20750ae32",
+      "publisher_hash_verified": true
+    },
+    "original/test-00000-of-00001.parquet": {
+      "bytes": 2145231,
+      "sha256": "0bc425145417e8966345af3324bad9627c8bd0f469559684c1d9c8dda81dbae5",
+      "publisher_hash_verified": true
+    },
+    "course/development/train.parquet": {
+      "bytes": 14812243,
+      "sha256": "02516127a176a0853d7dd781597a319832419f3b040700df8ed2f235279efd3e",
+      "rows": 9339,
+      "row_count_source": "existing split manifest; no holdout content inspection"
+    },
+    "course/development/test.parquet": {
+      "bytes": 4233369,
+      "sha256": "5a873203472029aef7b642c749ea5963fbe0b937c29f580919d3713ad6c5d2c4",
+      "rows": 2673,
+      "row_count_source": "existing split manifest; no holdout content inspection"
+    },
+    "course/validation_holdout/validation.parquet": {
+      "bytes": 2132604,
+      "sha256": "0e125a56ba01dacca70478a3b84d5feccd694165afa68f2d34ea08e928ec7b2c",
+      "rows": 1329,
+      "row_count_source": "existing split manifest; no holdout content inspection"
+    }
+  },
+  "holdout_decoded": false,
+  "privacy_note": "Published release contains residual identifiers; no new anonymization claimed.",
+  "archive": "ALARB_Project_Dataset.zip",
+  "archive_bytes": 38454138,
+  "archive_sha256": "0afff2b06966911cdd1f6cee4e7b9ae504ccd03c3636792453c51a9c896dd862"
+}

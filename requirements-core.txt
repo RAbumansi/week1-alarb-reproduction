@@ -1,0 +1,7 @@
+# Dataset preparation, benchmark, agentic TF-IDF prototype and tests.
+datasets==4.0.0
+pyarrow==25.0.1
+pytest==9.1.1
+numpy==2.5.3
+scikit-learn==1.9.1
+anthropic==1.8.0

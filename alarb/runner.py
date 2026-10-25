@@ -13,6 +13,7 @@ behind it, a resumed run costs nothing for work already done.
 from __future__ import annotations
 
 import json
+import hashlib
 import random
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -41,6 +42,16 @@ class RunConfig:
     max_tokens: int = 1024
     temperature: float = 0.0
     notes: dict = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.task not in tasks.ALL_TASKS:
+            raise ValueError(f"Unknown benchmark task: {self.task}")
+        if self.split not in ("train", "test"):
+            raise ValueError("Benchmark development runs allow train or test only.")
+        if self.limit is not None and self.limit < 1:
+            raise ValueError("limit must be positive or omitted for all cases.")
+        if self.max_tokens < 1 or self.omitted_steps < 1:
+            raise ValueError("max_tokens and omitted_steps must be positive.")
 
     @property
     def run_id(self) -> str:
@@ -110,13 +121,67 @@ def completed_case_ids(path: Path) -> set[str]:
     if not path.is_file():
         return set()
     done = set()
-    with path.open(encoding="utf-8") as stream:
-        for line in stream:
-            try:
-                done.add(json.loads(line)["case_id"])
-            except (json.JSONDecodeError, KeyError):
+    lines = path.read_bytes().splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        try:
+            case_id = json.loads(line)["case_id"]
+        except (json.JSONDecodeError, UnicodeDecodeError, KeyError):
+            if index == len(lines) - 1 and not line.endswith(b"\n"):
                 continue
+            raise ValueError(f"Invalid JSONL record in {path} at line {index + 1}.")
+        if case_id in done:
+            raise ValueError(f"Duplicate case ID in {path}.")
+        done.add(case_id)
     return done
+
+
+def recover_tail(path: Path) -> None:
+    """Preserve a crash-truncated final record before resuming an append."""
+    if not path.is_file():
+        return
+    lines = path.read_bytes().splitlines(keepends=True)
+    if not lines:
+        return
+    tail = lines[-1]
+    if not tail.endswith(b"\n"):
+        try:
+            json.loads(tail)["case_id"]
+        except (json.JSONDecodeError, UnicodeDecodeError, KeyError):
+            backup = path.with_name(path.name + ".interrupted-tail")
+            with backup.open("ab") as stream:
+                stream.write(tail + b"\n")
+            with path.open("r+b") as stream:
+                stream.truncate(sum(map(len, lines[:-1])))
+        else:
+            with path.open("ab") as stream:
+                stream.write(b"\n")
+
+
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _input_digest(items: list[tasks.TaskItem]) -> str:
+    payload = [asdict(item) for item in items]
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+
+
+def _validate_resume(config: RunConfig, path: Path, inputs: str, current: dict) -> None:
+    config_path = config.directory / "config.json"
+    if not path.is_file() or path.stat().st_size == 0:
+        return
+    if not config_path.is_file():
+        raise ValueError("Cannot resume predictions without a config; use --no-resume or a new run.")
+    stored = json.loads(config_path.read_text(encoding="utf-8"))
+    for key, value in asdict(config).items():
+        if key != "notes" and stored.get(key) != value:
+            raise ValueError(f"Cannot resume: {key} changed; use --no-resume or a new run.")
+    if stored.get("input_digest") != inputs:
+        raise ValueError("Cannot resume: task inputs changed or fingerprint is missing; use --no-resume.")
+    old = stored.get("provenance", {})
+    for key in ("dataset_revision", "corpus_digest", "prompt_digest"):
+        if old.get(key) != current.get(key):
+            raise ValueError(f"Cannot resume: {key} changed; use --no-resume or a new run.")
 
 
 def _predict(item: tasks.TaskItem, model: Model, is_mcq: bool) -> dict:
@@ -150,13 +215,28 @@ def run_inference(
     resume: bool = True,
     progress_every: int = 25,
 ) -> Path:
+    if concurrency < 1:
+        raise ValueError("concurrency must be positive.")
     items = build_items(config)
+    if not items:
+        raise ValueError("No eligible task items; no run was created.")
     directory = config.directory
     directory.mkdir(parents=True, exist_ok=True)
+    predictions = directory / "predictions.jsonl"
+    current = provenance.current(config.task)
+    inputs = _input_digest(items)
+    if resume:
+        _validate_resume(config, predictions, inputs, current)
+    already = completed_case_ids(predictions) if resume else set()
+    if already - {item.case_id for item in items}:
+        raise ValueError("Predictions contain cases outside the current task inputs.")
+    if resume:
+        recover_tail(predictions)
     (directory / "config.json").write_text(
         json.dumps(
             asdict(config)
-            | {"run_id": config.run_id, "provenance": provenance.current(config.task)},
+            | {"run_id": config.run_id, "provenance": current, "input_digest": inputs,
+               "expected_case_ids": [item.case_id for item in items]},
             ensure_ascii=False,
             indent=2,
         )
@@ -164,8 +244,6 @@ def run_inference(
         encoding="utf-8",
     )
 
-    predictions = directory / "predictions.jsonl"
-    already = completed_case_ids(predictions) if resume else set()
     pending = [item for item in items if item.case_id not in already]
     if already:
         print(f"  resuming: {len(already)} done, {len(pending)} to go")
@@ -224,6 +302,8 @@ def run_judging(
     resume: bool = True,
     progress_every: int = 25,
 ) -> Path:
+    if concurrency < 1:
+        raise ValueError("concurrency must be positive.")
     if config.task in tasks.MCQ_TASKS:
         raise ValueError(
             "Multiple-choice tasks are scored by comparing letters; they need no judge."
@@ -231,8 +311,27 @@ def run_judging(
     directory = config.directory
     records = read_jsonl(directory / "predictions.jsonl")
     judgments = directory / "judgments.jsonl"
-
+    completed_case_ids(directory / "predictions.jsonl")
+    judge_model = getattr(judge, "_model", None)
+    judging_config = {
+        "judge": judge.name, "predictions_sha256": file_sha256(directory / "predictions.jsonl"),
+        "judge_params": getattr(judge_model, "params", {}),
+        "judge_endpoint": getattr(judge_model, "base_url", None),
+        "heuristic_thresholds": {key: getattr(judge, key, None)
+                                 for key in ("_correct_at", "_partial_at")},
+    }
+    from alarb import prompts
+    judging_config["prompt_sha256"] = hashlib.sha256(prompts.JUDGE.encode()).hexdigest()
+    judging_path = directory / "judging_config.json"
+    if resume and judgments.exists() and judgments.stat().st_size:
+        if not judging_path.is_file() or json.loads(judging_path.read_text(encoding="utf-8")) != judging_config:
+            raise ValueError("Cannot resume judging with changed predictions or judge; use --no-resume.")
     already = completed_case_ids(judgments) if resume else set()
+    if already - {record["case_id"] for record in records}:
+        raise ValueError("Judgments contain cases outside this prediction file.")
+    if resume:
+        recover_tail(judgments)
+    judging_path.write_text(json.dumps(judging_config, indent=2) + "\n", encoding="utf-8")
     pending = [record for record in records if record["case_id"] not in already]
     if already:
         print(f"  resuming: {len(already)} judged, {len(pending)} to go")
@@ -255,12 +354,18 @@ def score(config: RunConfig) -> dict:
     directory = config.directory
     predictions = read_jsonl(directory / "predictions.jsonl")
     total = len(predictions)
+    if total == 0:
+        raise ValueError("Cannot score an empty prediction file.")
+    prediction_ids = completed_case_ids(directory / "predictions.jsonl")
     unparseable = sum(1 for record in predictions if not record["parsed_ok"])
 
     config_path = directory / "config.json"
     stored = (
         json.loads(config_path.read_text(encoding="utf-8")) if config_path.is_file() else {}
     )
+    expected = stored.get("expected_case_ids")
+    if expected is not None and set(expected) != prediction_ids:
+        raise ValueError("Inference is incomplete; finish the run before scoring.")
     metrics: dict = {
         "run_id": config.run_id,
         "task": config.task,
@@ -287,6 +392,17 @@ def score(config: RunConfig) -> dict:
                 f"{judgments_path} is missing. Run the judge before scoring."
             )
         judgments = read_jsonl(judgments_path)
+        if completed_case_ids(judgments_path) != prediction_ids:
+            raise ValueError("Judgments must cover exactly the prediction case IDs.")
+        if len({record["judge"] for record in judgments}) != 1:
+            raise ValueError("Mixed judges cannot be scored as one run.")
+        if any(record["label"] not in (*LABELS, UNPARSEABLE) for record in judgments):
+            raise ValueError("Unknown judgment label.")
+        judging_path = directory / "judging_config.json"
+        if judging_path.is_file():
+            judging = json.loads(judging_path.read_text(encoding="utf-8"))
+            if judging["predictions_sha256"] != file_sha256(directory / "predictions.jsonl"):
+                raise ValueError("Predictions changed after judging; rerun the judge.")
         counts = Counter(record["label"] for record in judgments)
         metrics["judge"] = judgments[0]["judge"] if judgments else None
         metrics["labels"] = {

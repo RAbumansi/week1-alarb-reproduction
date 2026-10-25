@@ -10,7 +10,9 @@ from pathlib import Path
 
 from alarb import agreement, corpus as corpus_module
 from alarb import (
+    agentic,
     data,
+    dataset_bundle,
     embeddings,
     judge as judge_module,
     mcq,
@@ -23,6 +25,26 @@ from alarb import (
 
 
 OUTCOME_PATH = Path("artifacts/outcome_distribution.json")
+
+
+def command_collect_dataset(args: argparse.Namespace) -> None:
+    report = dataset_bundle.collect(args.output, args.local_dir, args.offline, args.force)
+    args.manifest.parent.mkdir(parents=True, exist_ok=True)
+    args.manifest.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"Dataset collection: {report['status']}")
+    print(f"Archive: {args.output} ({report['archive_bytes']:,} bytes)")
+    print(f"SHA256: {report['archive_sha256']}")
+    print("Unmodified publisher files verified. Validation content was not decoded.")
+    print(f"Manifest: {args.manifest}")
+
+
+def command_agentic(args: argparse.Namespace) -> None:
+    model = agentic.SmokeModel() if args.model == "smoke" else providers.get_model(
+        args.model, args.max_tokens, args.temperature)
+    summary = agentic.run_experiment(model, args.output, args.limit, args.seed,
+                                     args.top_k, args.max_repairs)
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    print(f"Local traces: {args.output}. Raw traces are excluded from Git.")
 
 
 def load_run_config(run_id: str) -> runner.RunConfig:
@@ -280,6 +302,25 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m alarb.cli", description=__doc__)
     subcommands = parser.add_subparsers(dest="command", required=True)
 
+    collect_parser = subcommands.add_parser("collect-dataset", help="Package verified parent-paper data for course submission.")
+    collect_parser.add_argument("--output", type=Path, default=dataset_bundle.DEFAULT_OUTPUT)
+    collect_parser.add_argument("--manifest", type=Path, default=Path("artifacts/dataset_collection.json"))
+    collect_parser.add_argument("--local-dir", type=Path)
+    collect_parser.add_argument("--offline", action="store_true")
+    collect_parser.add_argument("--force", action="store_true")
+    collect_parser.set_defaults(handler=command_collect_dataset)
+
+    agent_parser = subcommands.add_parser("agentic", help="Run the training-only retrieval and verification prototype.")
+    agent_parser.add_argument("--model", required=True, help="ollama:qwen3:8b, a hosted model id, or smoke for an offline abstention fixture.")
+    agent_parser.add_argument("--output", type=Path, default=Path("runs/agentic-prototype"))
+    agent_parser.add_argument("--limit", type=int, default=10)
+    agent_parser.add_argument("--seed", type=int, default=42)
+    agent_parser.add_argument("--top-k", type=int, default=5)
+    agent_parser.add_argument("--max-repairs", type=int, choices=(0, 1, 2), default=1)
+    agent_parser.add_argument("--max-tokens", type=int, default=providers.DEFAULT_MAX_TOKENS)
+    agent_parser.add_argument("--temperature", type=float, default=providers.DEFAULT_TEMPERATURE)
+    agent_parser.set_defaults(handler=command_agentic)
+
     corpus_parser = subcommands.add_parser(
         "corpus", help="Rebuild the statute article corpus from the development cases."
     )
@@ -378,7 +419,10 @@ def main() -> None:
     report_parser.set_defaults(handler=command_report)
 
     args = parser.parse_args()
-    args.handler(args)
+    try:
+        args.handler(args)
+    except (ValueError, FileNotFoundError, FileExistsError) as error:
+        parser.error(str(error))
 
 
 if __name__ == "__main__":

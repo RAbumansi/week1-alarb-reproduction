@@ -4,7 +4,7 @@ The parent paper supports an Arabic legal-reasoning project. It does not contain
 
 ## Recommended research scope
 
-Build an auditable Arabic legal-case reasoning agent over anonymized cases:
+Build an auditable Arabic legal-case reasoning agent over research cases, with the residual-identification limitations below:
 
 1. A case-intake component validates that the input is an anonymized research case.
 2. A retrieval component finds potentially applicable statutory articles.
@@ -12,6 +12,22 @@ Build an auditable Arabic legal-case reasoning agent over anonymized cases:
 4. A verdict component predicts an outcome for benchmark evaluation only.
 5. A verification component checks every cited article and flags unsupported conclusions.
 6. A human-review gate approves any output before it leaves the research environment.
+
+## Implemented prototype as of October 25 2026
+
+`alarb/agentic.py` now implements structured fact intake, training-only retrieval,
+model drafting, citation/schema verification, bounded correction and an explicit
+human-review flag. Its hybrid retriever combines article-text TF-IDF with cited
+provisions from similar training cases. It fits only on the 9,339 training cases,
+not the development test or final validation cases. Held-out case verdicts,
+reasoning and legal references are not passed to the drafting component.
+
+A 50-case offline fixture run exercises the orchestration and evaluates
+retrieval separately. The fixture deliberately abstains and is not evidence of
+legal reasoning quality. A real-model experiment and human evaluation remain
+necessary. Citation checks confirm that an article was retrieved; they do not
+verify legal entailment or guarantee correct verdicts. Outputs always require
+human review, and the prototype does not automatically publish or approve them.
 
 ## The published data still contains personal names
 

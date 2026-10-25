@@ -1,0 +1,17 @@
+name: Upgrade regression tests
+on:
+  push:
+  pull_request:
+jobs:
+  synthetic-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install lightweight test dependencies
+        run: pip install pytest==9.1.1 pyarrow==25.0.1 numpy==2.5.3 scikit-learn==1.9.1
+      - name: Check agent boundaries and recovery using synthetic fixtures
+        run: python -m pytest tests/test_upgrades.py -q

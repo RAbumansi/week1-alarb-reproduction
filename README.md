@@ -1,6 +1,6 @@
 # Week 1: ALARB parent-paper reproduction
 
-This package reproduces everything that is currently public and executable for the first parent paper, **ALARB: An Arabic Legal Argument Reasoning Benchmark**.
+This project implements an independent reproduction harness for **ALARB: An Arabic Legal Argument Reasoning Benchmark** and an experimental retrieval and verification workflow. See `UPGRADE_REPORT.md` for the October 25 coding update and verified results. The paper's full numerical results have not been reproduced.
 
 ## What succeeded
 
@@ -12,11 +12,11 @@ This package reproduces everything that is currently public and executable for t
 
 ## Important scope correction
 
-ALARB is about reasoning over anonymized Saudi **commercial court cases**. It is not a criminal-record dataset and cannot determine whether a real person has a record. See `AGENTIC_PROJECT_SCOPE.md` for a research direction that matches the parent paper.
+ALARB is about Saudi **commercial court cases**. The published release still contains some personal names despite the authors' anonymization step. It cannot determine whether a real person has a criminal record. See `AGENTIC_PROJECT_SCOPE.md` for the scope and observed data limitations.
 
 ## Run it
 
-Requirements: Python 3.10 or newer, about 500 MB of free disk space, and internet access.
+Recommended setup: Python 3.13, about 500 MB of free disk space for the lightweight workflow, and internet access. The launcher accepts Python 3.10 through 3.13, but availability of the pinned binary dependencies also depends on your Python and operating system.
 
 ```bash
 cd week1_alarb_reproduction
@@ -24,7 +24,41 @@ chmod +x run_week1.sh
 ./run_week1.sh
 ```
 
-The first run creates `.venv`, installs the pinned dependency, downloads the approximately 21 MB official dataset into `.cache/huggingface`, executes the official loader, writes `artifacts/verification.json`, and creates three local datasets. The audit pins dataset revision `e64bfdc867146294a65434c5ca16c2c4c5288ca2`; the separate loader file remains the exact simple example shown by Hugging Face.
+The first run creates `.venv`, installs the core dependencies, downloads the approximately 21 MB official dataset into `.cache/huggingface`, executes the official loader, writes `artifacts/verification.json`, and creates three local datasets. The audit pins dataset revision `e64bfdc867146294a65434c5ca16c2c4c5288ca2`; the separate loader file remains the exact simple example shown by Hugging Face. `requirements-core.txt` supports the TF-IDF benchmark and agent prototype without Torch. Install `requirements.txt` separately if you want the sentence-transformer embedder.
+
+## Collect the dataset for the course
+
+Official first-hand source: [THIQAH-RD/ALARB](https://huggingface.co/datasets/THIQAH-RD/ALARB), used by [the parent paper](https://arxiv.org/abs/2510.00694).
+
+```bash
+.venv/bin/python -m alarb.cli collect-dataset
+```
+
+This creates `data/collected/ALARB_dataset.zip` and `artifacts/dataset_collection.json`. The ZIP includes the unmodified original train/test Parquet files, the three course splits, the publisher card and citation, the full declared dataset license, SHA256 checksums, and the split policy. Existing downloaded publisher files are checked against `SOURCE_LOCK.json`; missing files are downloaded from the pinned revision. Use `--offline` to require cached files, or `--local-dir /path/to/original/parquet/files` for another verified local copy. The default refuses to replace an existing ZIP; `--force` explicitly rebuilds it.
+
+The two official files contain 12,012 training cases and 1,329 test cases, totaling 13,341. The paper reports 13,344; this discrepancy remains documented. Course files are a second view of these same cases, not an additional dataset. The validation file is copied as opaque bytes without decoding its cases. Keep this research archive out of the public repository because the source release contains residual identifiers.
+
+## Agentic prototype
+
+The `agentic` command implements fact intake, article retrieval, model drafting, deterministic citation/schema verification, and up to two correction requests. It always marks outputs for human review. Retrieval uses a corpus of **654 articles built only from the 9,339 training cases**, plus similar training cases' cited provisions. Test-set verdicts, court reasoning, and cited laws are excluded from model prompts. Test cited laws are used only after inference to calculate retrieval recall.
+
+Offline wiring check, requiring no API key or model download:
+
+```bash
+.venv/bin/python -m alarb.cli agentic --model smoke --limit 50 --output runs/agentic-smoke
+```
+
+`smoke` is an explicit abstention fixture, not a language model. It checks execution and retrieval; it provides no verdict-quality evidence. Each output directory must be new, so earlier experiments are preserved. The completed 50-case development run and limitations are recorded in `artifacts/agentic_smoke_summary.json`.
+
+To use an installed local model:
+
+```bash
+ollama serve
+# In another terminal, after installing qwen3:8b in Ollama:
+.venv/bin/python -m alarb.cli agentic --model ollama:qwen3:8b --limit 10 --top-k 5 --max-repairs 1 --output runs/agentic-qwen3
+```
+
+Local traces are saved under `runs/` and excluded from Git. A verification pass means the JSON is complete and citations name retrieved articles; it does **not** establish legal correctness or whether the articles support every claim. Evaluate verdict quality separately, calibrate a judge against human labels, and keep the final validation data sealed.
 
 ## Training, test, and validation split
 
@@ -72,7 +106,7 @@ Build the task data once (no API key needed):
 ```bash
 .venv/bin/python -m alarb.cli corpus     # statute articles, recovered from the cases
 .venv/bin/python -m alarb.cli outcomes   # verdict breakdown + majority-class reference
-.venv/bin/python -m alarb.cli mcq        # both article-identification variants
+.venv/bin/python -m alarb.cli mcq --embedder tfidf  # lightweight task construction
 ```
 
 Then run a task, grade it, and score it. Models come from one of three places:
@@ -155,8 +189,21 @@ but it is not the paper's metric.
 in an order against the defendant, and the multiple-choice floor is 25%.
 
 ```bash
-.venv/bin/python -m pytest tests/    # 77 tests, no API key required
+.venv/bin/python -m pytest tests/    # 139 tests, no API key required
 ```
+
+## Run integrity and tests
+
+Resume now checks the task inputs, decoding settings and provenance before appending predictions. A truncated final JSONL record is preserved in a `.interrupted-tail` file and removed from the append stream; malformed middle records and duplicate IDs are rejected. Judging cannot mix different judges, thresholds or prediction files. Scoring rejects empty predictions, incomplete runs, incomplete judgments and mixed judges. Use `--no-resume` when intentionally restarting an incompatible run, or choose a distinct run configuration/output directory.
+
+```bash
+# Dataset-independent checks suitable for CI:
+.venv/bin/python -m pytest tests/test_upgrades.py -q
+# Full suite after preparing data and both MCQ task files:
+.venv/bin/python -m pytest tests/ -q
+```
+
+The October 25 verification passed **139 tests**. GitHub Actions runs the synthetic regression suite without downloading case data or opening validation.
 
 ## Files
 
@@ -175,7 +222,13 @@ in an order against the defendant, and the multiple-choice floor is 25%.
 - `EXECUTION_REPORT.md`: what was executed and what could not be reproduced.
 - `PAPER_METHOD.md`: experiment and fine-tuning settings extracted from the paper.
 - `SOURCE_LOCK.json`: exact paper, dataset, file hashes, and related-code commits.
-- `AGENTIC_PROJECT_SCOPE.md`: a later-phase agentic direction and safety boundary.
+- `AGENTIC_PROJECT_SCOPE.md`: implemented prototype scope, research plan and data limitations.
+- `alarb/agentic.py`: retrieval, model drafting, citation verification, and bounded correction.
+- `alarb/dataset_bundle.py`: verified dataset collection and course submission archive.
+- `artifacts/dataset_collection.json`: source, counts, file hashes and archive verification.
+- `artifacts/upgrade_offline_results.json`: the newly executed six-task offline checks.
+- `artifacts/agentic_smoke_summary.json`: aggregate prototype execution and retrieval check.
+- `UPGRADE_REPORT.md`: current implementation, evidence, and remaining work.
 
 ## What to tell the instructor
 

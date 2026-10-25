@@ -1,0 +1,207 @@
+{
+  "scope": "Offline pipeline checks; no learned-model accuracy claim",
+  "mcq_construction": {
+    "mcq_same_statute": {
+      "items": 2472,
+      "skipped": {
+        "no_cited_article": 201,
+        "document_too_small": 0
+      },
+      "embedder": "tfidf"
+    },
+    "mcq_semantic": {
+      "items": 2472,
+      "skipped": {
+        "no_cited_article": 201,
+        "too_few_neighbours": 0
+      },
+      "embedder": "tfidf"
+    }
+  },
+  "runs": [
+    {
+      "run_id": "verdict_facts__constant__test__n150",
+      "task": "verdict_facts",
+      "model": "constant",
+      "split": "test",
+      "items": 150,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "62220d62f712",
+        "harness_commit": "31cf0c2"
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 8,
+          "share": 0.0533
+        },
+        "INCORRECT": {
+          "count": 142,
+          "share": 0.9467
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "verdict_laws__constant__test__n150",
+      "task": "verdict_laws",
+      "model": "constant",
+      "split": "test",
+      "items": 133,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "072032ec2aaf",
+        "harness_commit": "31cf0c2"
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 6,
+          "share": 0.0451
+        },
+        "INCORRECT": {
+          "count": 127,
+          "share": 0.9549
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "verdict_reasoning__constant__test__n150",
+      "task": "verdict_reasoning",
+      "model": "constant",
+      "split": "test",
+      "items": 150,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "e062fa241f99",
+        "harness_commit": "31cf0c2"
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 8,
+          "share": 0.0533
+        },
+        "INCORRECT": {
+          "count": 142,
+          "share": 0.9467
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "argument_completion__constant__test__n150__omit2",
+      "task": "argument_completion",
+      "model": "constant",
+      "split": "test",
+      "items": 150,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "8755750a7cbe",
+        "harness_commit": "31cf0c2"
+      },
+      "judge": "heuristic:token-overlap",
+      "labels": {
+        "CORRECT": {
+          "count": 0,
+          "share": 0.0
+        },
+        "PARTIALLY CORRECT": {
+          "count": 8,
+          "share": 0.0533
+        },
+        "INCORRECT": {
+          "count": 142,
+          "share": 0.9467
+        },
+        "UNPARSEABLE": {
+          "count": 0,
+          "share": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "mcq_same_statute__random__test__n150",
+      "task": "mcq_same_statute",
+      "model": "random",
+      "split": "test",
+      "items": 133,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "54135dfe5f00",
+        "harness_commit": "31cf0c2"
+      },
+      "accuracy": 0.2556,
+      "correct": 34,
+      "random_floor": 0.25
+    },
+    {
+      "run_id": "mcq_semantic__random__test__n150",
+      "task": "mcq_semantic",
+      "model": "random",
+      "split": "test",
+      "items": 133,
+      "unparseable": {
+        "count": 0,
+        "share": 0.0
+      },
+      "provenance": {
+        "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+        "corpus_digest": "146b8ad1c54b",
+        "prompt_digest": "54135dfe5f00",
+        "harness_commit": "31cf0c2"
+      },
+      "accuracy": 0.2331,
+      "correct": 31,
+      "random_floor": 0.25
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "model": "smoke:abstention-fixture",
+  "limit": 50,
+  "seed": 42,
+  "top_k": 5,
+  "max_repairs": 1,
+  "prompt_version": "alarb-agentic-v1",
+  "retrieval_source": "training split only",
+  "corpus_sha256": "d64bdcef243476a1dc0fc8431c843cbe0998a918f0c67bf9ea77d0ca08f703f3",
+  "retrieval_method": "hybrid: 25% article-text TF-IDF + 75% training-case citation transfer",
+  "training_index_sha256": "525ec3ceb1a51e113cb3621a610a2ed974ddf7367edd2dde6b67d42aeab6dd4c",
+  "corpus_articles": 654,
+  "validation_accessed": false,
+  "items": 50,
+  "verification_status_counts": {
+    "ABSTAINED": 50
+  },
+  "repaired_cases": 0,
+  "retrieval_macro_recall_at_k": 0.561978,
+  "cases_with_gold_articles": 49,
+  "matched_training_corpus_articles": 145,
+  "interpretation": "Citation membership and schema checks only; verdict quality and legal entailment require separate evaluation.",
+  "smoke_fixture": true
+}
