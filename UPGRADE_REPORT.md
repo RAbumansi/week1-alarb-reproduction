@@ -63,6 +63,13 @@ it contains metadata and hashes rather than case text.
 - The setup supports a lightweight dependency file without Torch.
 - GitHub Actions is configured to run synthetic regression checks without data.
 
+The workflow is supplied in the local code package. Publication was attempted,
+but terminal Git has no saved credentials and the connected GitHub integration
+returns HTTP 403 for write operations. The upgrades are committed on the local
+`upgrades/agentic-dataset-oct25` branch and exported as a separate code ZIP.
+The remote repository has not been changed by this update, and no hosted CI
+execution is claimed.
+
 ## Executed verification
 
 The full suite passed **139 tests** in a fresh Python 3.13 environment. This
