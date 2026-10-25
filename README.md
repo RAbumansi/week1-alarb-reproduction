@@ -203,7 +203,7 @@ Resume now checks the task inputs, decoding settings and provenance before appen
 .venv/bin/python -m pytest tests/ -q
 ```
 
-The October 25 verification passed **139 tests**. The supplied GitHub Actions workflow is configured to run the synthetic regression suite without downloading case data or opening validation once it is published. No hosted CI execution is claimed in this update.
+The October 25 local verification passed **139 tests**. The published GitHub Actions workflow runs the synthetic regression suite on pushes and pull requests without downloading case data or opening validation. Hosted results are listed on the repository's Actions tab.
 
 ## Files
 

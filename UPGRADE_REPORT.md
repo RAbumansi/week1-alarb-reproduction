@@ -63,12 +63,13 @@ it contains metadata and hashes rather than case text.
 - The setup supports a lightweight dependency file without Torch.
 - GitHub Actions is configured to run synthetic regression checks without data.
 
-The workflow is supplied in the local code package. Publication was attempted,
-but terminal Git has no saved credentials and the connected GitHub integration
-returns HTTP 403 for write operations. The upgrades are committed on the local
-`upgrades/agentic-dataset-oct25` branch and exported as a separate code ZIP.
-The remote repository has not been changed by this update, and no hosted CI
-execution is claimed.
+GitHub publishing was initially blocked by missing terminal credentials and
+HTTP 403 responses from the connected integration. This was resolved on
+October 25 by authorizing the official GitHub CLI as RAbumansi and configuring
+Git to use that sign-in. The upgrades and workflow have now been pushed to
+`upgrades/agentic-dataset-oct25`, and the remote commit was verified against the
+local commit. Hosted regression checks are available on the repository's
+Actions tab. Raw cases and the collected dataset ZIP remain outside Git.
 
 ## Executed verification
 
