@@ -242,16 +242,6 @@ The October 25 local verification passed **139 tests**. The published GitHub Act
 - `artifacts/agentic_smoke_summary.json`: aggregate prototype execution and retrieval check.
 - `UPGRADE_REPORT.md`: current implementation, evidence, and remaining work.
 
-## What to tell the instructor
-
-The official ALARB dataset works, but the ALARB inference, MCQ-construction, judging, and fine-tuning code is not public. A search of the paper's own links, the Hugging Face repository, the THIQAH GitHub organisation and the authors' accounts found no implementation.
-
-We therefore took the independent-reimplementation route: the `alarb/` harness rebuilds the benchmark from the prompts printed in Appendices B.1 and B.2, and `DEVIATIONS.md` records every point where it departs from the paper. The paper's reported scores are **not** claimed as reproduced, and our numbers are not comparable to its tables — different judge, different embedder, a smaller article pool, and a different evaluation split.
-
-Worth confirming with the instructor: that an independent reimplementation is acceptable in place of running the authors' code, and that evaluating on our development split rather than the paper's test set is the right call given the sealed-holdout policy.
-
-Do not present the earlier `Thiqah/ArabLegalEval` repository as ALARB's implementation. It belongs to a different paper and carries no licence.
-
 ## Sources
 
 - Paper: https://arxiv.org/abs/2510.00694
