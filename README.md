@@ -4,13 +4,15 @@ This project implements an independent reproduction harness for **ALARB: An Arab
 
 ## Free GPU assignment demonstration
 
+**Measured November 7 pilot:** real Qwen3-8B inference on a free Colab Tesla T4 answered **15/20 correctly (75.00%)**, with 3 unparseable answers counted as failures and 0 truncated outputs. The paper reports 84.60% on 1,159 same-regulation questions. This pilot is 9.60 percentage points lower and does **not** establish a full reproduction. See [the measured report](COLAB_PILOT_RESULTS.md) and [exported evidence](artifacts/colab_pilot_20/). Final validation was not accessed. The original planned 100-question run remains incomplete; the user requested a shorter pilot.
+
 [Open the modular Qwen3-8B notebook in Colab](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-demo-v1/colab/ALARB_Free_GPU_Demo.ipynb). See `COLAB_DEMO_GUIDE.md` for the step-by-step run and Zoom recording plan.
 
 For the shorter run requested to reduce free-GPU time, use the [20-question pilot notebook](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-pilot-v1/colab/ALARB_Free_GPU_20_Question_Pilot.ipynb). This keeps the first 20 questions of the original frozen 100-question sample. A pilot is not a full benchmark reproduction. `alarb/pilot_export.py` can export a fixed prefix of an interrupted real-model run while preserving its original configuration and incomplete status.
 
 This experiment uses a real model on a free CUDA runtime, scores legal-article choices exactly, and compares its measured accuracy with Table 5. It freezes the model/dataset revisions and sample before inference. It does not access final validation or require paid APIs. The notebook is published without invented outputs; similarity to the paper must be assessed only after real inference, with the documented protocol differences.
 
-The November 7 preparation check passed 157 local tests, notebook schema validation, and real-data split verification. `artifacts/colab_preflight.json` records this evidence separately from model-inference results.
+The November 7 preparation check passed 157 local tests, notebook schema validation, and real-data split verification; adding pilot export increased the passing suite to 160 tests. `artifacts/colab_preflight.json` records preparation evidence separately from model-inference results.
 
 ## What succeeded
 

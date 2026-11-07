@@ -2,6 +2,8 @@
 
 ## What this assignment still needs
 
+The real 20-question pilot is now complete: **15/20 correct (75.00%)**, 3 unparseable answers counted as failures, and 0 truncated outputs. The original 100-question run was deliberately interrupted at the user's request. See [COLAB_PILOT_RESULTS.md](COLAB_PILOT_RESULTS.md) for the verified comparison and a narration script. A Zoom recording has not yet been created.
+
 Our public code and previous automated tests demonstrate coding progress and
 data access. They do not establish similarity to the parent paper's model scores.
 The assignment additionally needs a completed real-model experiment and a Zoom
@@ -32,7 +34,7 @@ The [original 100-question notebook](https://colab.research.google.com/github/RA
 3. Run cells in order. Review the frozen sample size, seed, model revision,
    quantization and token budget before any predictions.
 4. Verify dataset access and the three-question real-model smoke test.
-5. Run the 100-question experiment. Every answer is checkpointed. If interrupted
+5. Run the selected 20-question pilot (or the optional 100-question experiment). Every answer is checkpointed. If interrupted
    within the same runtime, rerun that cell to resume with identical settings.
 6. Inspect the measured score, parse failures, truncations and confidence interval.
    Download the evidence ZIP and save the executed notebook before disconnecting.
@@ -76,8 +78,8 @@ Aim for a short, clear recording after the actual experiment completes.
 For a fresh, short inference during recording, use the already loaded model and
 add the cell below. It generates one answer in a new directory rather than
 replaying a completed run. This is a runtime illustration on the first sample
-question, not a new performance estimate; use the full 100-question result for
-the paper comparison.
+question, not a new performance estimate; use the measured 20-question result for
+the pilot comparison and identify its sample size explicitly.
 
 ```python
 import time

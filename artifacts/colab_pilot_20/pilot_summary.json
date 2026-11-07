@@ -1,0 +1,39 @@
+{
+  "status": "PILOT_COMPLETE",
+  "task": "mcq_same_statute",
+  "model": "Qwen/Qwen3-8B",
+  "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "requested": 20,
+  "completed": 20,
+  "correct": 15,
+  "accuracy": 0.75,
+  "wilson_95_percent_interval": [
+    0.531299122381256,
+    0.8881382985923343
+  ],
+  "unparseable": 3,
+  "truncated": 0,
+  "paper_model": "Qwen3-8B",
+  "paper_table": "Table 5, Same Regulation",
+  "paper_accuracy": 0.846,
+  "paper_questions": 1159,
+  "paper_url": "https://arxiv.org/html/2510.00694v1#S5.T5",
+  "difference_percentage_points": -9.599999999999998,
+  "interpretation": "Reduced development task replication. Similarity to the paper is NOT established automatically by numeric proximity.",
+  "deviations": [
+    "Different development test cases; final validation remains sealed",
+    "693-article development-derived corpus rather than full statutory corpus",
+    "Independently reconstructed MCQ prompt and distractors",
+    "NF4 quantization and recorded generation settings; paper does not specify these"
+  ],
+  "validation_accessed": false,
+  "execution_backend": "transformers",
+  "original_planned_questions": 100,
+  "observed_source_predictions": 20,
+  "original_experiment_complete": false,
+  "source_code_commit": "2de32db0ac3fd5c806ea5653d795c0baf755b45f",
+  "source_signature": "5aafa1f518d420203ebf08c38ee1f7c565f688104636b201b76f8bb2e1fc5498",
+  "selection": "Fixed first questions of original frozen sample; no filtering by correctness",
+  "reason_for_pilot": "User requested a shorter pilot because of free-GPU runtime",
+  "similarity_to_paper_established": false
+}

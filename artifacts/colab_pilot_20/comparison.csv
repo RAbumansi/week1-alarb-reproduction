@@ -1,0 +1,3 @@
+experiment,questions,correct,accuracy,scope
+Parent paper Qwen3-8B Table 5,1159,not reconstructed from rounded percentage,0.846,original protocol
+Our real-model pilot,20,15,0.75,first questions of frozen development sample; NF4

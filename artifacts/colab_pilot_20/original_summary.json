@@ -1,0 +1,31 @@
+{
+  "status": "INCOMPLETE",
+  "task": "mcq_same_statute",
+  "model": "Qwen/Qwen3-8B",
+  "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "requested": 100,
+  "completed": 20,
+  "correct": 15,
+  "accuracy": 0.75,
+  "wilson_95_percent_interval": [
+    0.531299122381256,
+    0.8881382985923343
+  ],
+  "unparseable": 3,
+  "truncated": 0,
+  "paper_model": "Qwen3-8B",
+  "paper_table": "Table 5, Same Regulation",
+  "paper_accuracy": 0.846,
+  "paper_questions": 1159,
+  "paper_url": "https://arxiv.org/html/2510.00694v1#S5.T5",
+  "difference_percentage_points": -9.599999999999998,
+  "interpretation": "Reduced development task replication. Similarity to the paper is NOT established automatically by numeric proximity.",
+  "deviations": [
+    "Different development test cases; final validation remains sealed",
+    "693-article development-derived corpus rather than full statutory corpus",
+    "Independently reconstructed MCQ prompt and distractors",
+    "NF4 quantization and recorded generation settings; paper does not specify these"
+  ],
+  "validation_accessed": false,
+  "execution_backend": "transformers"
+}
