@@ -6,6 +6,8 @@ This project implements an independent reproduction harness for **ALARB: An Arab
 
 [Open the modular Qwen3-8B notebook in Colab](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-demo-v1/colab/ALARB_Free_GPU_Demo.ipynb). See `COLAB_DEMO_GUIDE.md` for the step-by-step run and Zoom recording plan.
 
+For the shorter run requested to reduce free-GPU time, use the [20-question pilot notebook](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-pilot-v1/colab/ALARB_Free_GPU_20_Question_Pilot.ipynb). This keeps the first 20 questions of the original frozen 100-question sample. A pilot is not a full benchmark reproduction. `alarb/pilot_export.py` can export a fixed prefix of an interrupted real-model run while preserving its original configuration and incomplete status.
+
 This experiment uses a real model on a free CUDA runtime, scores legal-article choices exactly, and compares its measured accuracy with Table 5. It freezes the model/dataset revisions and sample before inference. It does not access final validation or require paid APIs. The notebook is published without invented outputs; similarity to the paper must be assessed only after real inference, with the documented protocol differences.
 
 The November 7 preparation check passed 157 local tests, notebook schema validation, and real-data split verification. `artifacts/colab_preflight.json` records this evidence separately from model-inference results.

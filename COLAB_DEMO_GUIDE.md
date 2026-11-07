@@ -18,7 +18,12 @@ difference alone cannot establish equivalence across different task construction
 
 ## Open and run
 
-[Open the notebook in Colab](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-demo-v1/colab/ALARB_Free_GPU_Demo.ipynb)
+For the shorter run requested because of free-GPU runtime, use the
+[20-question pilot notebook](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-pilot-v1/colab/ALARB_Free_GPU_20_Question_Pilot.ipynb).
+It uses the first 20 questions of the original frozen sample and must be
+described as a pilot, with greater statistical uncertainty.
+
+The [original 100-question notebook](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-demo-v1/colab/ALARB_Free_GPU_Demo.ipynb) remains available for a larger follow-up run.
 
 1. Sign in with your Google account. Optionally save a copy to Drive.
 2. Select Runtime > Change runtime type > T4 GPU, if a free GPU is available.
@@ -67,6 +72,36 @@ Aim for a short, clear recording after the actual experiment completes.
 5. Show the completed run and the comparison table. State the actual numerator,
    denominator, percentage and all protocol differences.
 6. Show the evidence ZIP and explain the later agentic extension separately.
+
+For a fresh, short inference during recording, use the already loaded model and
+add the cell below. It generates one answer in a new directory rather than
+replaying a completed run. This is a runtime illustration on the first sample
+question, not a new performance estimate; use the full 100-question result for
+the paper comparison.
+
+```python
+import time
+from dataclasses import replace
+live_config = replace(CONFIG, sample_size=1)
+live_result = run_evaluation(
+    items[:1], backend,
+    RESULTS / f"recording-live-{int(time.time())}",
+    live_config,
+    {"scope": "one-question runtime illustration, not the paper comparison"},
+)
+```
+
+## Make the recording without a paid Zoom plan
+
+Zoom supports computer recording on its Basic free account using the desktop
+app. Start a meeting as the host, share the notebook browser window, then select
+Record and, if prompted, Record on this Computer. Present the actual results
+and the comparison above. Stop recording and end the meeting; wait for Zoom to
+convert the recording before closing the laptop. Upload the resulting MP4 to
+the course submission page. The notebook and a recording script alone are not
+the required recording.
+
+Source: [Zoom computer recording instructions](https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0076922).
 
 A truthful explanation template, to fill only after real inference:
 

@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from alarb import colab_demo as demo, tasks
+from alarb.pilot_export import export_pilot
 
 
 @pytest.mark.parametrize(("text", "expected"), [
@@ -131,3 +132,45 @@ def test_notebook_cells_have_valid_python_and_no_fabricated_outputs():
         if cell["cell_type"] == "code":
             ast.parse("".join(cell["source"]))
             assert cell["outputs"] == [] and cell["execution_count"] is None
+
+
+def pilot_source(tmp_path, backend="transformers"):
+    source = tmp_path / "source"
+    source.mkdir()
+    from dataclasses import asdict
+    config = {"config": asdict(demo.DemoConfig(sample_size=3)),
+              "backend": {"backend": backend}, "signature": "synthetic-test-signature",
+              "code_commit": "synthetic-unit-test-fixture",
+              "preparation": {"sample_case_ids": ["a", "b", "c"]}}
+    (source / "config.json").write_text(json.dumps(config))
+    (source / "summary.json").write_text(json.dumps({"status": "INCOMPLETE", "execution_backend": backend}))
+    rows = [{"case_id": "a", "reference": "A", "answer": "B", "truncated": False},
+            {"case_id": "b", "reference": "C", "answer": "C", "truncated": False}]
+    (source / "predictions.jsonl").write_text("".join(json.dumps(row)+"\n" for row in rows))
+    return source
+
+
+def test_pilot_preserves_first_questions_including_wrong_ones(tmp_path):
+    source = pilot_source(tmp_path)
+    original = {path.name: path.read_bytes() for path in source.iterdir()}
+    report = export_pilot(source, tmp_path / "pilot", count=2)
+    assert report["status"] == "PILOT_COMPLETE" and report["accuracy"] == 0.5
+    assert report["original_planned_questions"] == 3
+    assert not report["original_experiment_complete"]
+    assert not report["similarity_to_paper_established"]
+    assert {path.name: path.read_bytes() for path in source.iterdir()} == original
+
+
+def test_pilot_refuses_fixture_records(tmp_path):
+    source = pilot_source(tmp_path, backend="fixture")
+    with pytest.raises(ValueError, match="real-model"):
+        export_pilot(source, tmp_path / "pilot", count=2)
+
+
+def test_pilot_refuses_cherry_picked_order(tmp_path):
+    source = pilot_source(tmp_path)
+    path = source / "predictions.jsonl"
+    lines = path.read_text().splitlines(keepends=True)
+    path.write_text("".join(reversed(lines)))
+    with pytest.raises(ValueError, match="fixed first"):
+        export_pilot(source, tmp_path / "pilot", count=2)

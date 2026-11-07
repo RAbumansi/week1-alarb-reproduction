@@ -1,5 +1,6 @@
 """Build an unexecuted Colab notebook from reviewable Python source cells."""
 import ast
+import copy
 import json
 from pathlib import Path
 import textwrap
@@ -165,4 +166,33 @@ for index, cell in enumerate(cells):
 destination = ROOT / "colab/ALARB_Free_GPU_Demo.ipynb"
 destination.parent.mkdir(parents=True, exist_ok=True)
 destination.write_text(json.dumps(notebook, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+print(destination)
+
+# A separate short notebook keeps the original 100-question release intact.
+pilot = copy.deepcopy(notebook)
+pilot["metadata"]["colab"]["name"] = "ALARB_Free_GPU_20_Question_Pilot.ipynb"
+for cell in pilot["cells"]:
+    source = cell["source"]
+    source = source.replace("alarb-colab-demo-v1", "alarb-colab-pilot-v1")
+    source = source.replace("ALARB parent paper demonstration on a free GPU", "ALARB real model 20 question pilot on a free GPU")
+    source = source.replace("100-question development sample", "20-question development pilot")
+    source = source.replace("100-question experiment", "20-question pilot")
+    source = source.replace("100-question result", "20-question pilot result")
+    source = source.replace('DemoConfig(sample_size=100, sample_seed=42, split_seed=42)',
+                            'DemoConfig(sample_size=20, sample_seed=42, split_seed=42)')
+    source = source.replace('items, preparation = prepare_items(testing, articles, CONFIG)',
+        'full_items, preparation = prepare_items(testing, articles, replace(CONFIG, sample_size=100))\n'
+        'items = full_items[:CONFIG.sample_size]\n'
+        'preparation["selection_note"] = "First 20 of the original frozen 100-question sample; no selection by outcome"')
+    source = source.replace('"same-statute-100"', '"same-statute-20-pilot"')
+    source = source.replace('Our recorded development run', 'Our 20 question pilot')
+    if cell["cell_type"] == "code":
+        ast.parse(source)
+    cell["source"] = source
+pilot["cells"][0]["source"] += (
+    "\nThis short pilot uses the fixed first 20 questions of the original frozen "
+    "100-question sample. It was requested to reduce free-GPU execution time. "
+    "Report it as a pilot, not a full benchmark reproduction.\n")
+destination = ROOT / "colab/ALARB_Free_GPU_20_Question_Pilot.ipynb"
+destination.write_text(json.dumps(pilot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(destination)

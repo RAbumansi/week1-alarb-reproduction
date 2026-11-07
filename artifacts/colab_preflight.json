@@ -16,6 +16,7 @@
   "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
   "notebook_schema_validated": true,
   "local_tests_passed": 157,
+  "latest_local_tests_with_pilot_export": 160,
   "model_inference_executed_by_this_preflight": false,
   "similarity_to_paper_established": false,
   "validation_accessed": false
