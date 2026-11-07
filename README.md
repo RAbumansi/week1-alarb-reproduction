@@ -2,6 +2,14 @@
 
 This project implements an independent reproduction harness for **ALARB: An Arabic Legal Argument Reasoning Benchmark** and an experimental retrieval and verification workflow. See `UPGRADE_REPORT.md` for the October 25 coding update and verified results. The paper's full numerical results have not been reproduced.
 
+## Free GPU assignment demonstration
+
+[Open the modular Qwen3-8B notebook in Colab](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-demo-v1/colab/ALARB_Free_GPU_Demo.ipynb). See `COLAB_DEMO_GUIDE.md` for the step-by-step run and Zoom recording plan.
+
+This experiment uses a real model on a free CUDA runtime, scores legal-article choices exactly, and compares its measured accuracy with Table 5. It freezes the model/dataset revisions and sample before inference. It does not access final validation or require paid APIs. The notebook is published without invented outputs; similarity to the paper must be assessed only after real inference, with the documented protocol differences.
+
+The November 7 preparation check passed 157 local tests, notebook schema validation, and real-data split verification. `artifacts/colab_preflight.json` records this evidence separately from model-inference results.
+
 ## What succeeded
 
 - The official Hugging Face loading example was executed successfully.

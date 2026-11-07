@@ -14,4 +14,4 @@ jobs:
       - name: Install lightweight test dependencies
         run: pip install pytest==9.1.1 pyarrow==25.0.1 numpy==2.5.3 scikit-learn==1.9.1
       - name: Check agent boundaries and recovery using synthetic fixtures
-        run: python -m pytest tests/test_upgrades.py -q
+        run: python -m pytest tests/test_upgrades.py tests/test_colab_demo.py -q

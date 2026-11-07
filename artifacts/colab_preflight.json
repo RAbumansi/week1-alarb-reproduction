@@ -1,0 +1,22 @@
+{
+  "verified_on": "2026-11-07",
+  "status": "PREPARATION_VERIFIED",
+  "dataset": "THIQAH-RD/ALARB",
+  "dataset_revision": "e64bfdc867146294a65434c5ca16c2c4c5288ca2",
+  "training_file_sha256": "16a642aeff40e9c8d050ca99a81f7a1802cdbee64234778d6c5790d20750ae32",
+  "publisher_training_rows": 12012,
+  "course_training_rows": 9339,
+  "course_development_test_rows": 2673,
+  "split_matches_existing_case_ids_and_order": true,
+  "article_corpus_size": 693,
+  "eligible_same_statute_mcqs": 2472,
+  "frozen_sample_size": 100,
+  "sample_seed": 42,
+  "model": "Qwen/Qwen3-8B",
+  "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "notebook_schema_validated": true,
+  "local_tests_passed": 157,
+  "model_inference_executed_by_this_preflight": false,
+  "similarity_to_paper_established": false,
+  "validation_accessed": false
+}
