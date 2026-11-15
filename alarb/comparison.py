@@ -26,6 +26,8 @@ def describe(task: str, retriever: str | None) -> str:
         return "Facts only (paper task 1)"
     if task == "verdict_laws":
         return "Facts + court-cited articles (paper task 2, ceiling)"
+    if task == "verdict_rag" and retriever == "popularity":
+        return "Facts + most-cited articles (control)"
     if task == "verdict_rag":
         return f"Facts + retrieved articles ({retriever})"
     return task
