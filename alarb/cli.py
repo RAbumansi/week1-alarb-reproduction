@@ -11,6 +11,7 @@ from pathlib import Path
 from alarb import agreement, corpus as corpus_module
 from alarb import (
     agentic,
+    comparison,
     data,
     dataset_bundle,
     embeddings,
@@ -19,12 +20,45 @@ from alarb import (
     outcomes,
     provenance,
     providers,
+    retrieval,
     runner,
     tasks,
 )
 
 
 OUTCOME_PATH = Path("artifacts/outcome_distribution.json")
+
+
+def command_compare(args: argparse.Namespace) -> None:
+    result = comparison.compare_runs(args.runs, args.output)
+    print(f"Verdict conditions on {result['shared_cases']} shared cases, judged by {result['judge']}\n")
+    print(f"  {'condition':58} {'CORRECT':>8} {'PARTIAL':>8} {'WRONG':>7} {'C+P':>6} {'outcome':>8}")
+    for row in result["rows"]:
+        labels, oa = row["labels"], row["outcome_agreement"]
+        outcome = f"{oa['share']:.0%}" if oa["share"] is not None else "-"
+        print(f"  {row['condition']:58} {labels['CORRECT']:8.0%} {labels['PARTIALLY CORRECT']:8.0%} "
+              f"{labels['INCORRECT'] + labels['UNPARSEABLE']:7.0%} {row['correct_or_partial']:6.0%} {outcome:>8}")
+    print()
+    for row in result["rows"][1:]:
+        v = row["vs_baseline"]
+        print(f"  vs facts only, {row['condition']}: {v['better']} better, {v['worse']} worse, "
+              f"{v['same']} same (sign test p = {v['sign_test_p']})")
+    print(f"\nResults: {args.output}")
+
+
+def command_retrieval_eval(args: argparse.Namespace) -> None:
+    result = retrieval.evaluate(args.output)
+    q = result["queries"]
+    print("Article retrieval: training-only index, development-test queries")
+    print(f"  {q['citing_at_least_one_article']} of {q['cases']} cases cite an article; "
+          f"{q['gold_citations_absent_from_index']} of {q['gold_citations']} citations are absent from the index")
+    print(f"  dense temperature chosen on held-out training cases: "
+          f"{result['dense_temperature_tuning']['chosen']}\n")
+    print(f"  {'method':40} {'R@1':>6} {'R@3':>6} {'R@5':>6} {'R@10':>6} {'hit@5':>6} {'MRR':>6}")
+    for row in result["results"]:
+        print(f"  {row['label']:40} {row['recall@1']:6.3f} {row['recall@3']:6.3f} {row['recall@5']:6.3f} "
+              f"{row['recall@10']:6.3f} {row['hit@5']:6.3f} {row['mrr@10']:6.3f}")
+    print(f"\nResults: {args.output}")
 
 
 def command_collect_dataset(args: argparse.Namespace) -> None:
@@ -139,6 +173,7 @@ def command_run(args: argparse.Namespace) -> None:
         omitted_steps=args.omitted_steps,
         max_tokens=args.max_tokens,
         temperature=args.temperature,
+        retriever=args.retriever,
     )
     items = runner.build_items(config)
     prompt_tokens = sum(providers.estimate_tokens(item.prompt) for item in items)
@@ -321,6 +356,20 @@ def main() -> None:
     agent_parser.add_argument("--temperature", type=float, default=providers.DEFAULT_TEMPERATURE)
     agent_parser.set_defaults(handler=command_agentic)
 
+    retrieval_parser = subcommands.add_parser(
+        "retrieval-eval",
+        help="Compare article retrievers: training-only index, development-test queries.",
+    )
+    retrieval_parser.add_argument("--output", type=Path, default=retrieval.RESULTS_PATH)
+    retrieval_parser.set_defaults(handler=command_retrieval_eval)
+
+    compare_parser = subcommands.add_parser(
+        "compare", help="Pair verdict runs case by case; the first run is the baseline."
+    )
+    compare_parser.add_argument("--runs", nargs="+", required=True)
+    compare_parser.add_argument("--output", type=Path, default=comparison.RESULTS_PATH)
+    compare_parser.set_defaults(handler=command_compare)
+
     corpus_parser = subcommands.add_parser(
         "corpus", help="Rebuild the statute article corpus from the development cases."
     )
@@ -357,6 +406,11 @@ def main() -> None:
     run_parser.add_argument("--limit", type=int, default=150)
     run_parser.add_argument("--seed", type=int, default=42)
     run_parser.add_argument("--omitted-steps", type=int, default=tasks.DEFAULT_OMITTED_STEPS)
+    run_parser.add_argument(
+        "--retriever",
+        choices=retrieval.METHOD_NAMES,
+        help="Article retriever for verdict_rag (the index uses training cases only).",
+    )
     run_parser.add_argument("--max-tokens", type=int, default=providers.DEFAULT_MAX_TOKENS)
     run_parser.add_argument("--temperature", type=float, default=providers.DEFAULT_TEMPERATURE)
     run_parser.add_argument(
