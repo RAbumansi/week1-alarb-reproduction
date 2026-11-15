@@ -41,6 +41,7 @@ class RunConfig:
     language: str = tasks.DEFAULT_LANGUAGE
     max_tokens: int = 1024
     temperature: float = 0.0
+    retriever: str | None = None
     notes: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -52,6 +53,13 @@ class RunConfig:
             raise ValueError("limit must be positive or omitted for all cases.")
         if self.max_tokens < 1 or self.omitted_steps < 1:
             raise ValueError("max_tokens and omitted_steps must be positive.")
+        if self.task in tasks.RETRIEVAL_TASKS:
+            from alarb.retrieval import METHOD_NAMES
+
+            if self.retriever not in METHOD_NAMES:
+                raise ValueError(f"{self.task} needs --retriever, one of {METHOD_NAMES}.")
+        elif self.retriever is not None:
+            raise ValueError("--retriever applies only to retrieval-augmented tasks.")
 
     @property
     def run_id(self) -> str:
@@ -61,6 +69,8 @@ class RunConfig:
             parts.append(f"n{self.limit}")
         if self.task == "argument_completion":
             parts.append(f"omit{self.omitted_steps}")
+        if self.retriever:
+            parts.append(self.retriever)
         return "__".join(parts)
 
     @property
@@ -99,6 +109,17 @@ def build_items(config: RunConfig) -> list[tasks.TaskItem]:
         return tasks.build_verdict_items(
             config.task, cases, config.omitted_steps, config.language
         )
+    if config.task in tasks.RETRIEVAL_TASKS:
+        # The index is built from training cases only; the query cases' own cited
+        # articles never reach the retriever or the prompt.
+        hits = _training_retrieval().retrieve_batch(
+            config.retriever, [case.case_facts for case in cases], tasks.RAG_TOP_K
+        )
+        built = (
+            tasks.build_verdict_rag(case, [(h.key, h.text) for h in found], config.retriever, config.language)
+            for case, found in zip(cases, hits)
+        )
+        return [item for item in built if item is not None]
 
     path = mcq.TASK_DIR / f"{config.task}.{config.split}.jsonl"
     if not path.is_file():
@@ -113,6 +134,34 @@ def build_items(config: RunConfig) -> list[tasks.TaskItem]:
         for item in mcq.load_mcqs(path)
         if item.case_id in wanted
     ]
+
+
+_RETRIEVAL = {}
+
+
+def _training_retrieval():
+    if "index" not in _RETRIEVAL:
+        from alarb.retrieval import Retrieval
+
+        _RETRIEVAL["index"] = Retrieval(load_split("train"))
+    return _RETRIEVAL["index"]
+
+
+def outcome_agreement(predictions: list[dict]) -> dict:
+    """How often the predicted verdict lands in the court's outcome category
+    (for plaintiff, for defendant, dismissal, settlement). A coarse, judge-free
+    check: it rewards the right kind of ruling, not the right amounts. Cases whose
+    gold verdict the keyword rules cannot classify are left out."""
+    def category(text: str) -> str:
+        return outcomes.PAPER_CATEGORY[outcomes.classify_verdict(text)]
+
+    scored = [record for record in predictions if category(record["reference"]) != outcomes.UNCLASSIFIED]
+    agree = sum(
+        1
+        for record in scored
+        if record["parsed_ok"] and category(record["parsed"]["verdict"] or "") == category(record["reference"])
+    )
+    return {"count": agree, "of": len(scored), "share": round(agree / len(scored), 4) if scored else None}
 
 
 def completed_case_ids(path: Path) -> set[str]:
@@ -375,6 +424,8 @@ def score(config: RunConfig) -> dict:
         "unparseable": {"count": unparseable, "share": round(unparseable / total, 4)},
         "provenance": stored.get("provenance", {}),
     }
+    if config.retriever:
+        metrics["retriever"] = config.retriever
 
     if config.task in tasks.MCQ_TASKS:
         correct = sum(
@@ -386,6 +437,7 @@ def score(config: RunConfig) -> dict:
         metrics["correct"] = correct
         metrics["random_floor"] = round(1 / len(tasks.CHOICE_LETTERS), 4)
     else:
+        metrics["outcome_agreement"] = outcome_agreement(predictions)
         judgments_path = directory / "judgments.jsonl"
         if not judgments_path.is_file():
             raise FileNotFoundError(

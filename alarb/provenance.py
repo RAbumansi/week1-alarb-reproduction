@@ -23,6 +23,7 @@ SPLIT_MANIFEST = Path("artifacts/split_manifest.json")
 TASK_TEMPLATES = {
     "verdict_facts": "VERDICT_FROM_FACTS",
     "verdict_laws": "VERDICT_FROM_FACTS_AND_LAWS",
+    "verdict_rag": "VERDICT_FROM_FACTS_AND_LAWS",
     "verdict_reasoning": "VERDICT_FROM_FACTS_AND_REASONING",
     "argument_completion": "ARGUMENT_COMPLETION",
     "mcq_same_statute": "ARTICLE_MCQ",

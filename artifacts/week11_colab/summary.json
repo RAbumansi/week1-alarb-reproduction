@@ -1,0 +1,746 @@
+{
+  "experiment": "ALARB week 11: retrieval-grounded verdict prediction",
+  "config": {
+    "cases": 20,
+    "seed": 42,
+    "split_seed": 42,
+    "model_id": "Qwen/Qwen3-8B",
+    "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+    "quantization": "bitsandbytes NF4 double quantization float16 compute",
+    "thinking": true,
+    "max_new_tokens": 2048,
+    "judge_thinking": false,
+    "judge_max_new_tokens": 1024,
+    "batch_size": 10,
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "backend": {
+    "backend": "transformers, batched",
+    "gpu": "Tesla T4",
+    "gpu_vram_gib": 14.6,
+    "platform": "Google Colab",
+    "python": "3.13.16",
+    "torch": "2.14.1+cu130"
+  },
+  "preparation": {
+    "recall@5_on_selected_cases": {
+      "popularity": 0.4142,
+      "hybrid-tfidf": 0.4492
+    },
+    "training_cases": 9339,
+    "development_test_cases": 2673,
+    "code_commit": "8aff291"
+  },
+  "judge": "llm:Qwen/Qwen3-8B (thinking off)",
+  "comparison": {
+    "baseline": "verdict_facts",
+    "shared_cases": 20,
+    "grade_scale": "CORRECT 2, PARTIALLY CORRECT 1, INCORRECT or unparseable 0",
+    "rows": [
+      {
+        "run_id": "verdict_facts",
+        "condition": "Facts only (paper task 1)",
+        "cases": 20,
+        "labels": {
+          "CORRECT": 0.15,
+          "PARTIALLY CORRECT": 0.45,
+          "INCORRECT": 0.4,
+          "UNPARSEABLE": 0.0
+        },
+        "correct_or_partial": 0.6,
+        "correct_or_partial_95ci": [
+          0.3866,
+          0.7812
+        ],
+        "mean_grade": 0.75,
+        "outcome_agreement": {
+          "count": 5,
+          "of": 19,
+          "share": 0.2632
+        },
+        "truncated": 0,
+        "unparseable": 0,
+        "mean_input_tokens": 681,
+        "mean_output_tokens": 762
+      },
+      {
+        "run_id": "verdict_rag__popularity",
+        "condition": "Facts + most-cited articles (control)",
+        "cases": 20,
+        "labels": {
+          "CORRECT": 0.1,
+          "PARTIALLY CORRECT": 0.55,
+          "INCORRECT": 0.35,
+          "UNPARSEABLE": 0.0
+        },
+        "correct_or_partial": 0.65,
+        "correct_or_partial_95ci": [
+          0.4329,
+          0.8188
+        ],
+        "mean_grade": 0.75,
+        "outcome_agreement": {
+          "count": 5,
+          "of": 19,
+          "share": 0.2632
+        },
+        "truncated": 0,
+        "unparseable": 0,
+        "mean_input_tokens": 1734,
+        "mean_output_tokens": 915,
+        "vs_baseline": {
+          "better": 1,
+          "worse": 1,
+          "same": 18,
+          "sign_test_p": 1.0
+        }
+      },
+      {
+        "run_id": "verdict_rag__hybrid-tfidf",
+        "condition": "Facts + retrieved articles (hybrid-tfidf)",
+        "cases": 20,
+        "labels": {
+          "CORRECT": 0.15,
+          "PARTIALLY CORRECT": 0.55,
+          "INCORRECT": 0.3,
+          "UNPARSEABLE": 0.0
+        },
+        "correct_or_partial": 0.7,
+        "correct_or_partial_95ci": [
+          0.481,
+          0.8545
+        ],
+        "mean_grade": 0.85,
+        "outcome_agreement": {
+          "count": 5,
+          "of": 19,
+          "share": 0.2632
+        },
+        "truncated": 0,
+        "unparseable": 0,
+        "mean_input_tokens": 1750,
+        "mean_output_tokens": 962,
+        "vs_baseline": {
+          "better": 3,
+          "worse": 1,
+          "same": 16,
+          "sign_test_p": 0.625
+        }
+      }
+    ]
+  },
+  "per_condition": {
+    "verdict_facts": [
+      {
+        "case_id": "25bff515a5d69ba0",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 461,
+        "output_tokens": 775
+      },
+      {
+        "case_id": "8e28255b9d59bc25",
+        "label": "CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 470,
+        "output_tokens": 566
+      },
+      {
+        "case_id": "f51416a1d5570828",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 509,
+        "output_tokens": 596
+      },
+      {
+        "case_id": "3f0950dc4c1986e4",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 559,
+        "output_tokens": 687
+      },
+      {
+        "case_id": "01d8297268341fa1",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "settlement",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 630,
+        "output_tokens": 538
+      },
+      {
+        "case_id": "988581779b9352c1",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 727,
+        "output_tokens": 699
+      },
+      {
+        "case_id": "064cb954a3d2fa6f",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 665,
+        "output_tokens": 663
+      },
+      {
+        "case_id": "ee36a1b7c82a1a06",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 657,
+        "output_tokens": 818
+      },
+      {
+        "case_id": "763b5c097e33bdec",
+        "label": "CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 697,
+        "output_tokens": 874
+      },
+      {
+        "case_id": "26500d906b2d0640",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 669,
+        "output_tokens": 613
+      },
+      {
+        "case_id": "d72fbd2c0d37c2fa",
+        "label": "INCORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 720,
+        "output_tokens": 1379
+      },
+      {
+        "case_id": "ea04f573a5a4377d",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 726,
+        "output_tokens": 818
+      },
+      {
+        "case_id": "1f9e7952223a2c64",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "court_dismissal",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 712,
+        "output_tokens": 889
+      },
+      {
+        "case_id": "21fd1e25fef7cb59",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "unclassified",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 722,
+        "output_tokens": 818
+      },
+      {
+        "case_id": "6dd52bd6342e5ee9",
+        "label": "INCORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 684,
+        "output_tokens": 630
+      },
+      {
+        "case_id": "ca0248dc4a902cad",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 734,
+        "output_tokens": 678
+      },
+      {
+        "case_id": "322a0ae24f8b6416",
+        "label": "INCORRECT",
+        "gold_outcome": "for_defendant",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 746,
+        "output_tokens": 906
+      },
+      {
+        "case_id": "a6ec6389b71b75c1",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 810,
+        "output_tokens": 623
+      },
+      {
+        "case_id": "dbe859fe6ff7ba2c",
+        "label": "CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 827,
+        "output_tokens": 774
+      },
+      {
+        "case_id": "15e7c6632084c137",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "settlement",
+        "predicted_outcome": "settlement",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 888,
+        "output_tokens": 891
+      }
+    ],
+    "verdict_rag__popularity": [
+      {
+        "case_id": "25bff515a5d69ba0",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1514,
+        "output_tokens": 803
+      },
+      {
+        "case_id": "8e28255b9d59bc25",
+        "label": "CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1523,
+        "output_tokens": 922
+      },
+      {
+        "case_id": "f51416a1d5570828",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1562,
+        "output_tokens": 717
+      },
+      {
+        "case_id": "3f0950dc4c1986e4",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1612,
+        "output_tokens": 1030
+      },
+      {
+        "case_id": "01d8297268341fa1",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "settlement",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1683,
+        "output_tokens": 877
+      },
+      {
+        "case_id": "988581779b9352c1",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1780,
+        "output_tokens": 729
+      },
+      {
+        "case_id": "064cb954a3d2fa6f",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1718,
+        "output_tokens": 1171
+      },
+      {
+        "case_id": "ee36a1b7c82a1a06",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "court_dismissal",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1710,
+        "output_tokens": 876
+      },
+      {
+        "case_id": "763b5c097e33bdec",
+        "label": "CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1750,
+        "output_tokens": 1043
+      },
+      {
+        "case_id": "26500d906b2d0640",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1722,
+        "output_tokens": 832
+      },
+      {
+        "case_id": "d72fbd2c0d37c2fa",
+        "label": "INCORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1773,
+        "output_tokens": 951
+      },
+      {
+        "case_id": "ea04f573a5a4377d",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1779,
+        "output_tokens": 966
+      },
+      {
+        "case_id": "1f9e7952223a2c64",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1765,
+        "output_tokens": 908
+      },
+      {
+        "case_id": "21fd1e25fef7cb59",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "unclassified",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1775,
+        "output_tokens": 950
+      },
+      {
+        "case_id": "6dd52bd6342e5ee9",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1737,
+        "output_tokens": 1037
+      },
+      {
+        "case_id": "ca0248dc4a902cad",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1787,
+        "output_tokens": 778
+      },
+      {
+        "case_id": "322a0ae24f8b6416",
+        "label": "INCORRECT",
+        "gold_outcome": "for_defendant",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1799,
+        "output_tokens": 858
+      },
+      {
+        "case_id": "a6ec6389b71b75c1",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1863,
+        "output_tokens": 1109
+      },
+      {
+        "case_id": "dbe859fe6ff7ba2c",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1880,
+        "output_tokens": 882
+      },
+      {
+        "case_id": "15e7c6632084c137",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "settlement",
+        "predicted_outcome": "settlement",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1941,
+        "output_tokens": 857
+      }
+    ],
+    "verdict_rag__hybrid-tfidf": [
+      {
+        "case_id": "6dd52bd6342e5ee9",
+        "label": "INCORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_defendant",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1435,
+        "output_tokens": 1157
+      },
+      {
+        "case_id": "3f0950dc4c1986e4",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1578,
+        "output_tokens": 932
+      },
+      {
+        "case_id": "01d8297268341fa1",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "settlement",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1580,
+        "output_tokens": 949
+      },
+      {
+        "case_id": "f51416a1d5570828",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1562,
+        "output_tokens": 884
+      },
+      {
+        "case_id": "26500d906b2d0640",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1688,
+        "output_tokens": 922
+      },
+      {
+        "case_id": "ea04f573a5a4377d",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1745,
+        "output_tokens": 775
+      },
+      {
+        "case_id": "25bff515a5d69ba0",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1727,
+        "output_tokens": 684
+      },
+      {
+        "case_id": "763b5c097e33bdec",
+        "label": "CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1722,
+        "output_tokens": 974
+      },
+      {
+        "case_id": "064cb954a3d2fa6f",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1756,
+        "output_tokens": 1215
+      },
+      {
+        "case_id": "8e28255b9d59bc25",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1736,
+        "output_tokens": 1674
+      },
+      {
+        "case_id": "322a0ae24f8b6416",
+        "label": "INCORRECT",
+        "gold_outcome": "for_defendant",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1765,
+        "output_tokens": 595
+      },
+      {
+        "case_id": "a6ec6389b71b75c1",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1798,
+        "output_tokens": 1041
+      },
+      {
+        "case_id": "ee36a1b7c82a1a06",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "court_dismissal",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1775,
+        "output_tokens": 752
+      },
+      {
+        "case_id": "dbe859fe6ff7ba2c",
+        "label": "CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1820,
+        "output_tokens": 777
+      },
+      {
+        "case_id": "ca0248dc4a902cad",
+        "label": "INCORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1847,
+        "output_tokens": 1230
+      },
+      {
+        "case_id": "1f9e7952223a2c64",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "court_dismissal",
+        "predicted_outcome": "court_dismissal",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1784,
+        "output_tokens": 999
+      },
+      {
+        "case_id": "21fd1e25fef7cb59",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "unclassified",
+        "predicted_outcome": "for_plaintiff",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1800,
+        "output_tokens": 1112
+      },
+      {
+        "case_id": "988581779b9352c1",
+        "label": "CORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 2015,
+        "output_tokens": 853
+      },
+      {
+        "case_id": "15e7c6632084c137",
+        "label": "PARTIALLY CORRECT",
+        "gold_outcome": "settlement",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1941,
+        "output_tokens": 916
+      },
+      {
+        "case_id": "d72fbd2c0d37c2fa",
+        "label": "INCORRECT",
+        "gold_outcome": "for_plaintiff",
+        "predicted_outcome": "unclassified",
+        "parsed_ok": true,
+        "truncated": false,
+        "input_tokens": 1936,
+        "output_tokens": 805
+      }
+    ]
+  },
+  "incomplete": {
+    "verdict_laws": "The Colab runtime disconnected during this condition; not reported."
+  },
+  "validation_accessed": false
+}

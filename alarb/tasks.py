@@ -22,8 +22,13 @@ VERDICT_TASKS = (
     "verdict_reasoning",
     "argument_completion",
 )
+# Our extension, not one of the paper's tasks: the Figure 10 prompt, unchanged,
+# filled with articles a retriever found instead of the ones the court cited.
+RETRIEVAL_TASKS = ("verdict_rag",)
+GENERATIVE_TASKS = VERDICT_TASKS + RETRIEVAL_TASKS
 MCQ_TASKS = ("mcq_same_statute", "mcq_semantic")
-ALL_TASKS = VERDICT_TASKS + MCQ_TASKS
+ALL_TASKS = GENERATIVE_TASKS + MCQ_TASKS
+RAG_TOP_K = 5
 
 CHOICE_LETTERS = ("A", "B", "C", "D")
 
@@ -66,6 +71,31 @@ def build_verdict_laws(case: Case, language: str = DEFAULT_LANGUAGE) -> TaskItem
         ),
         reference=case.verdict,
         metadata={"cited_articles": len(case.applicable_laws)},
+    )
+
+
+def build_verdict_rag(
+    case: Case,
+    retrieved: list[tuple[str, str]],
+    retriever: str,
+    language: str = DEFAULT_LANGUAGE,
+) -> TaskItem | None:
+    """Figure 10 with retrieved articles. `retrieved` holds (key, text) pairs, laid
+    out exactly like the dataset's own applicable_laws entries ("{document}:{article}:
+    {text}"), so the only difference from verdict_laws is where the articles came from."""
+    if not retrieved:
+        return None
+    laws = tuple(f"{key}: {text}" for key, text in retrieved)
+    return TaskItem(
+        task="verdict_rag",
+        case_id=case.case_id,
+        prompt=prompts.VERDICT_FROM_FACTS_AND_LAWS.format(
+            language=language,
+            case_facts=_block(case.case_facts),
+            case_laws=_block(laws),
+        ),
+        reference=case.verdict,
+        metadata={"retriever": retriever, "retrieved_keys": [key for key, _ in retrieved]},
     )
 
 

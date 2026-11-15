@@ -2,6 +2,24 @@
 
 This project implements an independent reproduction harness for **ALARB: An Arabic Legal Argument Reasoning Benchmark** and an experimental retrieval and verification workflow. See `UPGRADE_REPORT.md` for the October 25 coding update and verified results. The paper's full numerical results have not been reproduced.
 
+## Week 11 novelty: retrieval-grounded verdict prediction
+
+The paper's task 2 gives the model the articles the court cited, which no real
+assistant has. We replaced them with retrieved articles. [NOVELTY.md](NOVELTY.md)
+has the method, both comparison tables and their limits.
+
+- **Retrieval, eight methods**: `python -m alarb.cli retrieval-eval` compares
+  facts-to-statute matching (the paper's abandoned approach), case-based citation
+  transfer, dense and fusion variants, and a most-cited baseline, on a training-only
+  index with all 2,673 development-test cases as queries.
+- **Verdicts, four conditions**: [the week 11 Colab notebook](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/week11-retrieval-novelty/colab/ALARB_Week11_Retrieval_Novelty.ipynb)
+  runs Qwen3-8B on a free T4 with facts only, most-cited articles, retrieved
+  articles, and court-cited articles, then grades every verdict with the paper's
+  judge prompt. Nothing is saved to Google Drive; results print in the notebook.
+- **Locally**: `python -m alarb.cli run --task verdict_rag --retriever hybrid-tfidf ...`
+  runs the same condition through the harness, and `python -m alarb.cli compare`
+  pairs runs case by case.
+
 ## Free GPU assignment demonstration
 
 **Measured November 7 pilot:** real Qwen3-8B inference on a free Colab Tesla T4 answered **15/20 correctly (75.00%)**, with 3 unparseable answers counted as failures and 0 truncated outputs. The paper reports 84.60% on 1,159 same-regulation questions. This pilot is 9.60 percentage points lower and does **not** establish a full reproduction. See [the measured report](COLAB_PILOT_RESULTS.md) and [exported evidence](artifacts/colab_pilot_20/). Final validation was not accessed. The original planned 100-question run remains incomplete; the user requested a shorter pilot.

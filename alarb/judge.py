@@ -43,7 +43,7 @@ class Judge:
 
 class AnthropicJudge(Judge):
     def __init__(self, model: Model) -> None:
-        self.name = f"anthropic:{model.name}"
+        self.name = f"llm:{model.name}"
         self._model = model
 
     def judge(self, reference: str, prediction: str) -> Judgement:
