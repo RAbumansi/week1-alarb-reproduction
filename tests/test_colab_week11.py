@@ -64,13 +64,37 @@ def test_pipeline_runs_resumes_and_leaks_no_case_text(tmp_path):
         w.judge_condition(runs / cid, backend, config, cid)
     assert backend.calls == 4 * 6 * 2
 
-    summary = w.summarise(tmp_path, config, prep, backend.metadata)
-    assert [row["condition"] for row in summary["comparison"]["rows"]][0] == "Facts only (paper task 1)"
+    results = {cid: w.compact(runs / cid) for cid in w.CONDITION_IDS}
+    summary = w.summarise(results, config, prep, backend.metadata, w.judge_label(config))
+    rows = summary["comparison"]["rows"]
+    assert rows[0]["condition"] == "Facts only (paper task 1)"
     assert summary["comparison"]["shared_cases"] == 6
-    assert len(summary["per_case"]) == 6
+    assert all("vs_baseline" in row for row in rows[1:])
     assert summary["validation_accessed"] is False
     printed = json.dumps(summary, ensure_ascii=False)
     assert SECRET not in printed and "وقائع رقم" not in printed
+
+
+def test_printed_conditions_can_be_recovered(capsys):
+    rows = [{"case_id": "a", "label": "CORRECT", "gold_outcome": "for_plaintiff", "predicted_outcome": "for_plaintiff",
+             "parsed_ok": True, "truncated": False, "input_tokens": 1, "output_tokens": 1}]
+    w.print_condition("verdict_facts", rows)
+    w.print_condition("verdict_laws", rows)
+    recovered = w.parse_printed("noise\n" + capsys.readouterr().out + "more noise")
+    assert recovered == {"verdict_facts": rows, "verdict_laws": rows}
+
+
+def test_table_pairs_against_facts_only():
+    def row(cid, label, predicted="for_plaintiff"):
+        return {"case_id": cid, "label": label, "gold_outcome": "for_plaintiff", "predicted_outcome": predicted,
+                "parsed_ok": True, "truncated": False, "input_tokens": 10, "output_tokens": 5}
+    result = w.table({
+        "verdict_facts": [row("a", "INCORRECT", "court_dismissal"), row("b", "CORRECT")],
+        "verdict_laws": [row("a", "CORRECT"), row("b", "CORRECT")],
+    })
+    facts, laws = result["rows"]
+    assert facts["outcome_agreement"] == {"count": 1, "of": 2, "share": 0.5}
+    assert laws["vs_baseline"] == {"better": 1, "worse": 0, "same": 1, "sign_test_p": 1.0}
 
 
 def test_unparseable_verdicts_are_not_sent_to_the_judge(tmp_path):

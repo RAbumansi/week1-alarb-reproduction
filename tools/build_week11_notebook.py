@@ -74,7 +74,7 @@ import json
 from dataclasses import asdict
 from alarb import colab_week11 as w
 from alarb.colab_demo import load_development, prepare_development
-CONFIG = w.Week11Config(cases=20, seed=42, batch_size=6)
+CONFIG = w.Week11Config(cases=20, seed=42, batch_size=10)
 RESULTS = Path("/content/week11-results")
 print(json.dumps(asdict(CONFIG), indent=2))
 """)
@@ -96,21 +96,24 @@ if "backend" not in globals():
     backend = w.BatchedBackend(CONFIG)
 print(json.dumps(backend.metadata, indent=2))
 """)
-md("## 7 Generate verdicts for all four conditions\nThis is the long step. Progress prints after each batch; if the session drops, run this cell again and it resumes.")
+md("## 7 Generate and grade each condition\nEach condition is generated, graded with the paper's Appendix B.1 judge prompt, and its results printed before the next starts, so a dropped session loses at most one condition. To skip conditions finished in an earlier session, paste their printed output into `EARLIER` as a string.")
 code("""
+EARLIER = ""
+results = w.parse_printed(EARLIER)
 for (task, retriever), cid in zip(w.CONDITIONS, w.CONDITION_IDS):
-    w.run_condition(conditions[cid], backend, RESULTS / "runs" / cid, CONFIG, cid, retriever)
+    if cid in results:
+        print(f"  {cid}: recovered from an earlier session")
+        continue
+    directory = RESULTS / "runs" / cid
+    w.run_condition(conditions[cid], backend, directory, CONFIG, cid, retriever)
+    w.judge_condition(directory, backend, CONFIG, cid)
+    results[cid] = w.compact(directory)
+    w.print_condition(cid, results[cid])
 """)
-md("## 8 Grade every verdict with the paper's judge prompt")
-code("""
-for cid in w.CONDITION_IDS:
-    w.judge_condition(RESULTS / "runs" / cid, backend, CONFIG, cid)
-""")
-md("## 9 Results\nCase hashes, labels and counts only; no case text or names.")
+md("## 8 Results\nCase hashes, labels and counts only; no case text or names.")
 code("""
 import pandas as pd
-summary = w.summarise(RESULTS, CONFIG, preparation, backend.metadata)
-rows = summary["comparison"]["rows"]
+summary = w.summarise(results, CONFIG, preparation, backend.metadata, w.judge_label(CONFIG))
 display(pd.DataFrame([{
     "Condition": r["condition"], "Cases": r["cases"],
     "Correct %": round(100 * r["labels"]["CORRECT"]), "Partially %": round(100 * r["labels"]["PARTIALLY CORRECT"]),
@@ -118,8 +121,8 @@ display(pd.DataFrame([{
     "Correct or partial %": round(100 * r["correct_or_partial"]),
     "Outcome agreement %": None if r["outcome_agreement"]["share"] is None else round(100 * r["outcome_agreement"]["share"]),
     "Better / worse vs facts": "" if "vs_baseline" not in r else f'{r["vs_baseline"]["better"]} / {r["vs_baseline"]["worse"]} (p={r["vs_baseline"]["sign_test_p"]})',
-} for r in rows]))
-print(json.dumps(summary["generation"], indent=1))
+    "Truncated": r["truncated"],
+} for r in summary["comparison"]["rows"]]))
 w.print_result(summary)
 """)
 

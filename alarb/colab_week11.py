@@ -38,6 +38,8 @@ CONDITIONS = (
 )
 RESULT_BEGIN = "WEEK11_RESULT_BEGIN"
 RESULT_END = "WEEK11_RESULT_END"
+CONDITION_BEGIN = "WEEK11_CONDITION_BEGIN"
+CONDITION_END = "WEEK11_CONDITION_END"
 
 
 def condition_id(task: str, retriever: str | None) -> str:
@@ -59,7 +61,7 @@ class Week11Config:
     max_new_tokens: int = 2048
     judge_thinking: bool = False
     judge_max_new_tokens: int = 1024
-    batch_size: int = 6
+    batch_size: int = 10
     temperature: float = 0.6
     top_p: float = 0.95
     top_k: int = 20
@@ -230,12 +232,16 @@ def run_condition(items: list[tasks.TaskItem], backend, directory: Path, config:
     return [done[i.case_id] for i in items]
 
 
+def judge_label(config: Week11Config) -> str:
+    return f"llm:{config.model_id} (thinking {'on' if config.judge_thinking else 'off'})"
+
+
 def judge_condition(directory: Path, backend, config: Week11Config, label: str) -> list[dict]:
     """Grade with the paper's Appendix B.1 prompt. Unparseable verdicts are not sent."""
     records = runner.read_jsonl(directory / "predictions.jsonl")
     path = directory / "judgments.jsonl"
     done = _done(path)
-    judge_name = f"llm:{config.model_id} (thinking {'on' if config.judge_thinking else 'off'})"
+    judge_name = judge_label(config)
     with path.open("a", encoding="utf-8") as stream:
         for record in records:
             if record["case_id"] not in done and not record["parsed_ok"]:
@@ -260,37 +266,92 @@ def judge_condition(directory: Path, backend, config: Week11Config, label: str) 
     return [done[r["case_id"]] for r in records]
 
 
-def summarise(results_dir: Path, config: Week11Config, preparation: dict, metadata: dict) -> dict:
-    """Everything the paper and recording need, without any case text."""
-    runs_dir = results_dir / "runs"
-    original = runner.RUNS_DIR
-    try:
-        runner.RUNS_DIR = runs_dir
-        table = comparison.compare_runs(list(CONDITION_IDS), output=results_dir / "verdict_comparison.json")
-    finally:
-        runner.RUNS_DIR = original
-    grid, generation = {}, {}
-    for cid in CONDITION_IDS:
-        preds = runner.read_jsonl(runs_dir / cid / "predictions.jsonl")
-        judged = {r["case_id"]: r["label"] for r in runner.read_jsonl(runs_dir / cid / "judgments.jsonl")}
-        for r in preds:
-            cat = outcomes.PAPER_CATEGORY[outcomes.classify_verdict(r["parsed"]["verdict"] or "")] if r["parsed_ok"] else None
-            grid.setdefault(r["case_id"], {
-                "gold_outcome": outcomes.PAPER_CATEGORY[outcomes.classify_verdict(r["reference"])]})[cid] = {
-                "label": judged[r["case_id"]], "predicted_outcome": cat}
-        generation[cid] = {
-            "truncated": sum(r["truncated"] for r in preds),
-            "unparseable": sum(not r["parsed_ok"] for r in preds),
-            "mean_input_tokens": round(sum(r["input_tokens"] for r in preds) / len(preds)),
-            "mean_output_tokens": round(sum(r["output_tokens"] for r in preds) / len(preds)),
+def compact(directory: Path) -> list[dict]:
+    """One condition's results as case hashes, labels, outcome categories and
+    counts. No case text, so it can be printed and kept."""
+    preds = runner.read_jsonl(directory / "predictions.jsonl")
+    judged = {r["case_id"]: r["label"] for r in runner.read_jsonl(directory / "judgments.jsonl")}
+
+    def category(text: str) -> str:
+        return outcomes.PAPER_CATEGORY[outcomes.classify_verdict(text)]
+
+    return [{
+        "case_id": r["case_id"],
+        "label": judged[r["case_id"]],
+        "gold_outcome": category(r["reference"]),
+        "predicted_outcome": category(r["parsed"]["verdict"] or "") if r["parsed_ok"] else None,
+        "parsed_ok": r["parsed_ok"],
+        "truncated": r["truncated"],
+        "input_tokens": r["input_tokens"],
+        "output_tokens": r["output_tokens"],
+    } for r in preds]
+
+
+def table(results: dict[str, list[dict]], baseline: str = "verdict_facts") -> dict:
+    """The comparison table from compact results: the same cases, paired
+    against the baseline, with a sign test."""
+    ids = sorted(set.intersection(*({r["case_id"] for r in rows} for rows in results.values())))
+    if not ids:
+        raise ValueError("The conditions share no cases.")
+    by = {cid: {r["case_id"]: r for r in rows} for cid, rows in results.items()}
+    out = []
+    for cid in [baseline] + [c for c in results if c != baseline]:
+        rows = [by[cid][i] for i in ids]
+        labels = [r["label"] for r in rows]
+        good = sum(label in ("CORRECT", "PARTIALLY CORRECT") for label in labels)
+        scored = [r for r in rows if r["gold_outcome"] != outcomes.UNCLASSIFIED]
+        agree = sum(r["predicted_outcome"] == r["gold_outcome"] for r in scored)
+        task, _, retriever = cid.partition("__")
+        row = {
+            "run_id": cid,
+            "condition": comparison.describe(task, retriever or None),
+            "cases": len(ids),
+            "labels": {label: round(labels.count(label) / len(ids), 4) for label in (*LABELS, UNPARSEABLE)},
+            "correct_or_partial": round(good / len(ids), 4),
+            "correct_or_partial_95ci": comparison.wilson(good, len(ids)),
+            "mean_grade": round(sum(comparison.GRADE[label] for label in labels) / len(ids), 4),
+            "outcome_agreement": {"count": agree, "of": len(scored),
+                                  "share": round(agree / len(scored), 4) if scored else None},
+            "truncated": sum(r["truncated"] for r in rows),
+            "unparseable": sum(not r["parsed_ok"] for r in rows),
+            "mean_input_tokens": round(sum(r["input_tokens"] for r in rows) / len(rows)),
+            "mean_output_tokens": round(sum(r["output_tokens"] for r in rows) / len(rows)),
         }
+        if cid != baseline:
+            deltas = [comparison.GRADE[by[cid][i]["label"]] - comparison.GRADE[by[baseline][i]["label"]] for i in ids]
+            better, worse = sum(d > 0 for d in deltas), sum(d < 0 for d in deltas)
+            row["vs_baseline"] = {"better": better, "worse": worse, "same": len(ids) - better - worse,
+                                  "sign_test_p": comparison.sign_test(better, worse)}
+        out.append(row)
+    return {"baseline": baseline, "shared_cases": len(ids),
+            "grade_scale": "CORRECT 2, PARTIALLY CORRECT 1, INCORRECT or unparseable 0", "rows": out}
+
+
+def print_condition(cid: str, rows: list[dict]) -> None:
+    print(CONDITION_BEGIN)
+    print(json.dumps({"condition": cid, "results": rows}, separators=(",", ":")))
+    print(CONDITION_END)
+
+
+def summarise(results: dict[str, list[dict]], config: Week11Config, preparation: dict, metadata: dict,
+              judge: str) -> dict:
+    """Everything the paper and recording need, without any case text."""
     return {
         "experiment": "ALARB week 11: retrieval-grounded verdict prediction",
         "config": asdict(config), "backend": metadata, "preparation": preparation,
-        "comparison": table, "generation": generation, "per_case": grid,
-        "labels": list(LABELS) + [UNPARSEABLE],
+        "judge": judge, "comparison": table(results), "per_condition": results,
         "validation_accessed": False,
     }
+
+
+def parse_printed(text: str) -> dict[str, list[dict]]:
+    """Recover per-condition results from notebook output, so conditions that
+    finished before a disconnect are not lost."""
+    found = {}
+    for chunk in text.split(CONDITION_BEGIN)[1:]:
+        payload = json.loads(chunk.split(CONDITION_END)[0].strip())
+        found[payload["condition"]] = payload["results"]
+    return found
 
 
 def print_result(summary: dict) -> None:
