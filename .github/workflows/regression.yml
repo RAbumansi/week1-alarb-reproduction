@@ -1,8 +1,30 @@
-name: Upgrade regression tests
+name: ALARB verification
 on:
   push:
   pull_request:
 jobs:
+  clean-machine:
+    name: Fresh download (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Run the README command from a clean directory
+        run: python run_project.py
+      - name: Save the reproduced metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-machine-${{ matrix.os }}
+          path: runs/fresh-machine/results.json
+          if-no-files-found: error
+
   synthetic-regressions:
     runs-on: ubuntu-latest
     steps:

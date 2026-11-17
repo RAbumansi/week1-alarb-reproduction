@@ -64,11 +64,12 @@ import os
 
 REPOSITORY = "https://github.com/RAbumansi/week1-alarb-reproduction.git"
 CODE_REF = "alarb-colab-demo-v1"
-PROJECT = Path("/content/alarb-project")
+PROJECT = Path("/content") / CODE_REF
 if not PROJECT.exists():
     subprocess.run(["git", "clone", "--depth", "1", "--branch", CODE_REF, REPOSITORY, str(PROJECT)], check=True)
 else:
-    expected = subprocess.check_output(["git", "rev-parse", CODE_REF], cwd=PROJECT, text=True).strip()
+    expected = subprocess.check_output(["git", "rev-parse", f"{CODE_REF}^{{commit}}"],
+                                       cwd=PROJECT, text=True).strip()
     actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=PROJECT, text=True).strip()
     if actual != expected:
         raise RuntimeError("Existing project has a different revision. Use a fresh runtime; do not overwrite your edits.")

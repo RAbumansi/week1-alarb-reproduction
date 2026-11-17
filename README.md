@@ -2,13 +2,39 @@
 
 This project implements an independent reproduction harness for **ALARB: An Arabic Legal Argument Reasoning Benchmark** and an experimental retrieval and verification workflow. See `UPGRADE_REPORT.md` for the October 25 coding update and verified results. The paper's full numerical results have not been reproduced.
 
-## Free GPU assignment demonstration
+## Run on a fresh computer
+
+1. On the public GitHub repository, select **Code → Download ZIP**, then extract the ZIP to a writable folder.
+2. Open a terminal in the extracted folder that contains `run_project.py`.
+3. Run the command for your operating system.
+
+| Operating system | Command |
+|---|---|
+| Windows (PowerShell or Command Prompt) | `py -3.13 run_project.py` |
+| macOS or Linux (Terminal) | `python3.13 run_project.py` |
+
+Use 64-bit [CPython 3.13](https://www.python.org/downloads/) and a writable project
+directory with at least 1 GB free. First setup needs access to PyPI and Hugging
+Face. The launcher creates a private environment and fetches the verified
+19 MB publisher training file. The CPU workflow needs no GPU or API key.
+It uses only that file to rebuild the 9,339 training and 2,673 test cases.
+See the [recording guide and change log](FRESH_MACHINE.md) for platform details,
+expected output and troubleshooting.
+
+The command runs the 50-case retrieval experiment and separately recomputes
+the original Qwen3-8B pilot score using the archived model responses. Expected
+results are **56.1978% macro recall@5** for live CPU retrieval and
+**15/20 correct (75.00%)** for archived Qwen3 predictions. The report,
+`runs/fresh-machine/results.json`, records both modes, package versions, and the
+dataset fingerprint. To generate new Qwen3 predictions, use the GPU workflow below.
+
+## Free GPU experiment
 
 **Measured November 7 pilot:** real Qwen3-8B inference on a free Colab Tesla T4 answered **15/20 correctly (75.00%)**, with 3 unparseable answers counted as failures and 0 truncated outputs. The paper reports 84.60% on 1,159 same-regulation questions. This pilot is 9.60 percentage points lower and does **not** establish a full reproduction. See [the measured report](COLAB_PILOT_RESULTS.md) and [exported evidence](artifacts/colab_pilot_20/). Final validation was not accessed. The original planned 100-question run remains incomplete; the user requested a shorter pilot.
 
-[Open the modular Qwen3-8B notebook in Colab](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-demo-v1/colab/ALARB_Free_GPU_Demo.ipynb). See `COLAB_DEMO_GUIDE.md` for the step-by-step run and Zoom recording plan.
+[Open the modular Qwen3-8B notebook in Colab](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/main/colab/ALARB_Free_GPU_Demo.ipynb). See `COLAB_DEMO_GUIDE.md` for the step-by-step run and Zoom recording plan.
 
-For the shorter run requested to reduce free-GPU time, use the [20-question pilot notebook](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/alarb-colab-pilot-v1/colab/ALARB_Free_GPU_20_Question_Pilot.ipynb). This keeps the first 20 questions of the original frozen 100-question sample. A pilot is not a full benchmark reproduction. `alarb/pilot_export.py` can export a fixed prefix of an interrupted real-model run while preserving its original configuration and incomplete status.
+For the shorter run requested to reduce free-GPU time, use the [20-question pilot notebook](https://colab.research.google.com/github/RAbumansi/week1-alarb-reproduction/blob/main/colab/ALARB_Free_GPU_20_Question_Pilot.ipynb). This keeps the first 20 questions of the original frozen 100-question sample. A pilot is not a full benchmark reproduction. `alarb/pilot_export.py` can export a fixed prefix of an interrupted real-model run while preserving its original configuration and incomplete status.
 
 This experiment uses a real model on a free CUDA runtime, scores legal-article choices exactly, and compares its measured accuracy with Table 5. It freezes the model/dataset revisions and sample before inference. It does not access final validation or require paid APIs. The notebook is published without invented outputs; similarity to the paper must be assessed only after real inference, with the documented protocol differences.
 
@@ -26,14 +52,12 @@ The November 7 preparation check passed 157 local tests, notebook schema validat
 
 ALARB is about Saudi **commercial court cases**. The published release still contains some personal names despite the authors' anonymization step. It cannot determine whether a real person has a criminal record. See `AGENTIC_PROJECT_SCOPE.md` for the scope and observed data limitations.
 
-## Run it
+## Week 1 data audit and full harness setup
 
-Recommended setup: Python 3.13, about 500 MB of free disk space for the lightweight workflow, and internet access. The launcher accepts Python 3.10 through 3.13, but availability of the pinned binary dependencies also depends on your Python and operating system.
+For the older Week 1 audit on macOS or Linux, use Python 3.12 or 3.13 and internet access. The main fresh-computer command above also works from Windows and prepares only the development data for the CPU experiment.
 
 ```bash
-cd week1_alarb_reproduction
-chmod +x run_week1.sh
-./run_week1.sh
+PYTHON_BIN=python3.13 bash run_week1.sh
 ```
 
 The first run creates `.venv`, installs the core dependencies, downloads the approximately 21 MB official dataset into `.cache/huggingface`, executes the official loader, writes `artifacts/verification.json`, and creates three local datasets. The audit pins dataset revision `e64bfdc867146294a65434c5ca16c2c4c5288ca2`; the separate loader file remains the exact simple example shown by Hugging Face. `requirements-core.txt` supports the TF-IDF benchmark and agent prototype without Torch. Install `requirements.txt` separately if you want the sentence-transformer embedder.
