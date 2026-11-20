@@ -2,6 +2,12 @@
 
 This project implements an independent reproduction harness for **ALARB: An Arabic Legal Argument Reasoning Benchmark** and an experimental retrieval and verification workflow. See `UPGRADE_REPORT.md` for the October 25 coding update and verified results. The paper's full numerical results have not been reproduced.
 
+## Download our course dataset
+
+[Download our Training, Test and Validation CSVs (ZIP)](https://github.com/RAbumansi/week1-alarb-reproduction/releases/download/alarb-course-dataset-v1/ALARB_Training_Test_Validation_CSV.zip), or open the [dataset release](https://github.com/RAbumansi/week1-alarb-reproduction/releases/tag/alarb-course-dataset-v1) for the split manifest and SHA-256 checksum.
+
+The ZIP contains **9,339 training**, **2,673 development-test**, and **1,329 final-validation** cases, plus reading instructions, the source attribution and Apache 2.0 license. All three CSVs match the original course export. Keep the validation file excluded from development and model selection until final evaluation. The source is the pinned ALARB publisher release documented in the manifest; the dataset contains Saudi commercial court cases.
+
 ## Run on a fresh computer
 
 1. On the public GitHub repository, select **Code → Download ZIP**, then extract the ZIP to a writable folder.
